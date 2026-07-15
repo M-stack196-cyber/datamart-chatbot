@@ -1,4 +1,6 @@
 import io
+import os
+from dotenv import load_dotenv
 
 import docx
 from fastapi import Depends, FastAPI, File, UploadFile
@@ -12,11 +14,14 @@ import chat_routes
 import conversation_routes
 import models
 
+# Load environment variables
+load_dotenv()
+
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
 # ============================================================
-# CORS CONFIGURATION - FIXED
+# CORS CONFIGURATION - UPDATED FOR VERCEL
 # ============================================================
 app.add_middleware(
     CORSMiddleware,
@@ -27,10 +32,13 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
-        "http://localhost:5500",    # VS Code Live Server
+        "http://localhost:5500",
         "http://127.0.0.1:5500",
-        "null",                      # For file:// protocol
-        "*",                         # Allow all origins (for testing)
+        "null",
+        "*",
+        # Add your Vercel frontend URL here after deployment
+        "https://datamart-chatbot.vercel.app",
+        "https://datamart-chatbot-1978.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
