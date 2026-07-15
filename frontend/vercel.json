@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/dtmindex.html" },
+    { "source": "/((?!dtmindex.html|assets|.*\\..*).*)", "destination": "/index.html" }
+  ]
+}

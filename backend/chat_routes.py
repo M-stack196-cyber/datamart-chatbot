@@ -1,0 +1,81 @@
+import os
+
+import requests
+from dotenv import load_dotenv
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from dependencies import get_current_user
+from models import User
+from schemas import ChatRequest
+
+load_dotenv()
+
+router = APIRouter(tags=["chat"])
+
+
+@router.post("/chat")
+def chat_proxy(payload: ChatRequest, current_user: User = Depends(get_current_user)):
+    webhook_url = os.getenv("N8N_CHAT_WEBHOOK_URL")
+    if not webhook_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server chat webhook is not configured",
+        )
+
+    request_payload = {
+        "question": payload.question,
+        "user_role": current_user.role,
+    }
+
+    try:
+        response = requests.post(webhook_url, json=request_payload, timeout=45)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Upstream chat workflow failed: {exc}",
+        ) from exc
+
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Upstream chat workflow returned invalid JSON",
+        ) from exc
+
+
+# ============================================================
+# PUBLIC: Chat endpoint for website widget (no auth required)
+# ============================================================
+@router.post("/chat-public")
+def chat_public(payload: ChatRequest):
+    """Public chat endpoint for website widget (no auth required)."""
+    webhook_url = os.getenv("N8N_CHAT_WEBHOOK_URL")
+    if not webhook_url:
+        return {
+            "answer": "I'm having trouble connecting right now. Please try again in a moment. If the issue persists, contact us at info@dtm.io."
+        }
+
+    request_payload = {
+        "question": payload.question,
+        "user_role": "guest",
+        "source": "website_widget"
+    }
+
+    try:
+        response = requests.post(webhook_url, json=request_payload, timeout=45)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        # Return user-friendly error instead of throwing exception
+        return {
+            "answer": "I'm having trouble connecting to my knowledge base right now. Please try again in a moment. If the issue persists, feel free to contact us at info@dtm.io."
+        }
+
+    try:
+        return response.json()
+    except ValueError as exc:
+        # Return user-friendly error instead of throwing exception
+        return {
+            "answer": "I'm still learning and couldn't find the answer to your question. Please try rephrasing, or reach out to our team at info@dtm.io for immediate assistance."
+        }

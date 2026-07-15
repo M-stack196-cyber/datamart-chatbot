@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datamart Inc | Build. Scale. Transform.</title>
+    <style>
+        /* ============================================================
+           DATAMART DEMO WEBSITE - Brand Colors: #D61903
+           ============================================================ */
+
+        /* ---- RESET & BASE ---- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1a1a1a;
+            background: #f8f9fa;
+            line-height: 1.6;
+        }
+
+        /* ---- HEADER / NAV ---- */
+        .site-header {
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 16px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .site-logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .site-logo span {
+            color: #D61903;
+        }
+
+        .site-nav {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .site-nav a {
+            text-decoration: none;
+            color: #4a4a4a;
+            font-size: 15px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .site-nav a:hover {
+            color: #D61903;
+        }
+
+        .site-nav .cta-button {
+            background: #D61903;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .site-nav .cta-button:hover {
+            background: #b01503;
+            color: #fff;
+        }
+
+        /* ---- HERO SECTION ---- */
+        .hero {
+            padding: 80px 40px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.1;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 span {
+            color: #D61903;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #5a5a5a;
+            margin-bottom: 30px;
+            max-width: 480px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .hero-buttons .btn-primary {
+            background: #D61903;
+            color: #fff;
+            padding: 14px 32px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .hero-buttons .btn-primary:hover {
+            background: #b01503;
+        }
+
+        .hero-buttons .btn-secondary {
+            background: transparent;
+            color: #1a1a1a;
+            padding: 14px 32px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.2s;
+        }
+
+        .hero-buttons .btn-secondary:hover {
+            border-color: #D61903;
+        }
+
+        .hero-image {
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e9ecef;
+            position: relative;
+        }
+
+        .hero-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .hero-image .placeholder {
+            padding: 40px;
+            text-align: center;
+            font-size: 20px;
+            color: #888;
+        }
+
+        /* ---- STATS SECTION ---- */
+        .stats {
+            background: #fff;
+            padding: 60px 40px;
+            border-top: 1px solid #e9ecef;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .stats-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            text-align: center;
+        }
+
+        .stats-grid .stat-number {
+            font-size: 40px;
+            font-weight: 800;
+            color: #D61903;
+        }
+
+        .stats-grid .stat-label {
+            font-size: 14px;
+            color: #6a6a6a;
+            margin-top: 4px;
+        }
+
+        /* ---- SERVICES SECTION ---- */
+        .services {
+            padding: 60px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .services h2 {
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .services .subtitle {
+            text-align: center;
+            color: #6a6a6a;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .service-card {
+            background: #fff;
+            padding: 30px 24px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .service-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            transform: translateY(-4px);
+        }
+
+        .service-card .icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .service-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .service-card p {
+            font-size: 14px;
+            color: #6a6a6a;
+        }
+
+        /* ---- TECH STACK ---- */
+        .tech-stack {
+            background: #fff;
+            padding: 60px 40px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .tech-stack-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .tech-stack h2 {
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .tech-stack .subtitle {
+            text-align: center;
+            color: #6a6a6a;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .tech-tag {
+            background: #f0f0f0;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        /* ---- FOOTER ---- */
+        .site-footer {
+            background: #1a1a1a;
+            color: #aaa;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .site-footer .footer-logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .site-footer .footer-logo span {
+            color: #D61903;
+        }
+
+        .site-footer p {
+            font-size: 14px;
+        }
+
+        /* ============================================================
+           CHAT WIDGET (Overlay)
+           ============================================================ */
+
+        /* ---- Floating Button ---- */
+        .datamart-widget-button {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #D61903;
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 20px rgba(214, 25, 3, 0.4);
+            cursor: pointer;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            font-size: 28px;
+        }
+
+        .datamart-widget-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 28px rgba(214, 25, 3, 0.5);
+        }
+
+        .datamart-widget-button.pulse {
+            animation: datamart-pulse 2s infinite;
+        }
+
+        @keyframes datamart-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(214, 25, 3, 0.4); }
+            70% { box-shadow: 0 0 0 16px rgba(214, 25, 3, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(214, 25, 3, 0); }
+        }
+
+        /* ---- Chat Window ---- */
+        .datamart-widget-window {
+            position: fixed;
+            bottom: 96px;
+            right: 24px;
+            width: 380px;
+            height: 520px;
+            max-height: calc(100vh - 120px);
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.16);
+            display: none;
+            flex-direction: column;
+            z-index: 99999;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .datamart-widget-window.open {
+            display: flex;
+        }
+
+        /* ---- Header ---- */
+        .datamart-widget-header {
+            background: #D61903;
+            color: #fff;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .datamart-widget-header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .datamart-widget-header-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .datamart-widget-header-close:hover {
+            opacity: 1;
+        }
+
+        /* ---- Messages ---- */
+        .datamart-widget-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            background: #f7f7f8;
+        }
+
+        .datamart-widget-message {
+            margin-bottom: 12px;
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            animation: datamart-message-in 0.3s ease;
+        }
+
+        .datamart-widget-message.user {
+            background: #D61903;
+            color: #fff;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .datamart-widget-message.bot {
+            background: #e9ecef;
+            color: #1a1a1a;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+
+        @keyframes datamart-message-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .datamart-widget-typing {
+            display: flex;
+            gap: 4px;
+            padding: 8px 14px;
+            background: #e9ecef;
+            border-radius: 12px;
+            border-bottom-left-radius: 4px;
+            width: fit-content;
+            margin-bottom: 12px;
+        }
+
+        .datamart-widget-typing span {
+            width: 8px;
+            height: 8px;
+            background: #888;
+            border-radius: 50%;
+            animation: datamart-typing 1.4s infinite;
+        }
+
+        .datamart-widget-typing span:nth-child(2) { animation-delay: 0.2s; }
+        .datamart-widget-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes datamart-typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        /* ---- Suggested Questions ---- */
+        .datamart-widget-suggestions {
+            padding: 8px 20px 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            border-top: 1px solid #eee;
+            background: #fff;
+            flex-shrink: 0;
+        }
+
+        .datamart-widget-suggestion-btn {
+            background: #f0f0f0;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 12px;
+            color: #333;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .datamart-widget-suggestion-btn:hover {
+            background: #D61903;
+            color: #fff;
+        }
+
+        /* ---- Input ---- */
+        .datamart-widget-input-wrap {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            border-top: 1px solid #eee;
+            background: #fff;
+            flex-shrink: 0;
+        }
+
+        .datamart-widget-input-wrap input {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            padding: 8px 16px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .datamart-widget-input-wrap input:focus {
+            border-color: #D61903;
+        }
+
+        .datamart-widget-input-wrap button {
+            background: #D61903;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .datamart-widget-input-wrap button:hover {
+            background: #b01503;
+        }
+
+        .datamart-widget-input-wrap button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 768px) {
+            .hero {
+                grid-template-columns: 1fr;
+                padding: 40px 20px;
+                gap: 30px;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 24px;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .site-header {
+                padding: 12px 20px;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .site-nav {
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            .datamart-widget-window {
+                bottom: 80px;
+                right: 12px;
+                left: 12px;
+                width: auto;
+                height: 60vh;
+                max-height: calc(100vh - 100px);
+                border-radius: 12px;
+            }
+
+            .datamart-widget-button {
+                width: 52px;
+                height: 52px;
+                font-size: 24px;
+                bottom: 16px;
+                right: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+    SITE HEADER
+    ============================================================ -->
+    <header class="site-header">
+        <a href="#" class="site-logo">
+            <span>Datamart</span> Inc
+        </a>
+        <nav class="site-nav">
+            <a href="#">Services</a>
+            <a href="#">Case Studies</a>
+            <a href="#">About</a>
+            <a href="#" class="cta-button">Contact</a>
+        </nav>
+    </header>
+
+    <!-- ============================================================
+    HERO SECTION
+    ============================================================ -->
+    <section class="hero">
+        <div>
+            <h1>Build. <span>Scale.</span> Transform.</h1>
+            <p>
+                We place pre-vetted senior engineers into your workflow in 1-2 weeks.
+                US-Managed, globally delivered. 50-70% lower cost than US hiring.
+            </p>
+            <div class="hero-buttons">
+                <a href="#" class="btn-primary">Get Started</a>
+                <a href="#" class="btn-secondary">Learn More</a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <img 
+                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=400&fit=crop&crop=center"
+                alt="Datamart team collaboration"
+            />
+            <div class="placeholder" style="display:none;">🚀 Trusted by Industry Leaders</div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    STATS SECTION
+    ============================================================ -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div>
+                <div class="stat-number">2011</div>
+                <div class="stat-label">Founded</div>
+            </div>
+            <div>
+                <div class="stat-number">150+</div>
+                <div class="stat-label">Projects Delivered</div>
+            </div>
+            <div>
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Engineers</div>
+            </div>
+            <div>
+                <div class="stat-number">5+</div>
+                <div class="stat-label">Years Longest Client</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    SERVICES SECTION
+    ============================================================ -->
+    <section class="services">
+        <h2>Our Services</h2>
+        <p class="subtitle">What we do to help you build, scale, and transform</p>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="icon">🤝</div>
+                <h3>Staff Augmentation</h3>
+                <p>Pre-vetted senior engineers at 50-70% lower cost. Placed in 1-2 weeks.</p>
+            </div>
+            <div class="service-card">
+                <div class="icon">🚀</div>
+                <h3>MVP Development</h3>
+                <p>Launch your product in 8-12 weeks with our expert team.</p>
+            </div>
+            <div class="service-card">
+                <div class="icon">⚡</div>
+                <h3>SaaS Maintenance</h3>
+                <p>99.99% uptime guarantee with 24/7 support and monitoring.</p>
+            </div>
+            <div class="service-card">
+                <div class="icon">🤖</div>
+                <h3>AI Automation</h3>
+                <p>Agentic AI, LLMs, and RAG solutions for your business.</p>
+            </div>
+            <div class="service-card">
+                <div class="icon">💻</div>
+                <h3>Custom Software</h3>
+                <p>Full-stack development with React, Node.js, Python, and more.</p>
+            </div>
+            <div class="service-card">
+                <div class="icon">☁️</div>
+                <h3>Cloud & DevOps</h3>
+                <p>AWS, Docker, Kubernetes - scalable and secure infrastructure.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    TECH STACK
+    ============================================================ -->
+    <section class="tech-stack">
+        <div class="tech-stack-inner">
+            <h2>Technology Stack</h2>
+            <p class="subtitle">Our expertise, your competitive edge</p>
+            <div class="tech-tags">
+                <span class="tech-tag">React</span>
+                <span class="tech-tag">Node.js</span>
+                <span class="tech-tag">Python</span>
+                <span class="tech-tag">Ruby on Rails</span>
+                <span class="tech-tag">PostgreSQL</span>
+                <span class="tech-tag">MongoDB</span>
+                <span class="tech-tag">AWS</span>
+                <span class="tech-tag">Docker</span>
+                <span class="tech-tag">Kubernetes</span>
+                <span class="tech-tag">TypeScript</span>
+                <span class="tech-tag">Flutter</span>
+                <span class="tech-tag">React Native</span>
+                <span class="tech-tag">OpenAI</span>
+                <span class="tech-tag">LangChain</span>
+                <span class="tech-tag">CI/CD</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    FOOTER
+    ============================================================ -->
+    <footer class="site-footer">
+        <div class="footer-logo"><span>Datamart</span> Inc</div>
+        <p>© 2024 Datamart Inc. All rights reserved.</p>
+        <p style="margin-top: 8px; font-size: 12px; color: #666;">
+            Palo Alto, California, USA
+        </p>
+    </footer>
+
+    <!-- ============================================================
+    CHAT WIDGET
+    ============================================================ -->
+
+    <!-- Floating Button -->
+    <button class="datamart-widget-button pulse" id="datamartChatButton" aria-label="Open chat">
+        💬
+    </button>
+
+    <!-- Chat Window -->
+    <div class="datamart-widget-window" id="datamartChatWindow">
+        <!-- Header -->
+        <div class="datamart-widget-header">
+            <div class="datamart-widget-header-title">
+                <span>💬</span> Datamart AI
+            </div>
+            <button class="datamart-widget-header-close" id="datamartChatClose">✕</button>
+        </div>
+
+        <!-- Messages -->
+        <div class="datamart-widget-messages" id="datamartMessages">
+            <!-- Initial greeting will be inserted by JS -->
+        </div>
+
+        <!-- Suggested Questions -->
+        <div class="datamart-widget-suggestions" id="datamartSuggestions">
+            <button class="datamart-widget-suggestion-btn" data-question="What services does Datamart offer?">What services?</button>
+            <button class="datamart-widget-suggestion-btn" data-question="How much does staff augmentation cost?">Pricing</button>
+            <button class="datamart-widget-suggestion-btn" data-question="How quickly can you start a project?">Timeline</button>
+            <button class="datamart-widget-suggestion-btn" data-question="What technologies do you use?">Tech stack</button>
+        </div>
+
+        <!-- Input -->
+        <div class="datamart-widget-input-wrap">
+            <input type="text" id="datamartChatInput" placeholder="Ask a question..." />
+            <button id="datamartChatSend" aria-label="Send message">➤</button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    CHAT WIDGET JAVASCRIPT (UPDATED WITH BETTER ERROR HANDLING)
+    ============================================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            // CONFIGURATION
+            // ============================================================
+            const CONFIG = {
+                API_URL: 'http://localhost:8000/chat-public',
+                WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!",
+            };
+
+            // ============================================================
+            // DOM Elements
+            // ============================================================
+            const button = document.getElementById('datamartChatButton');
+            const windowEl = document.getElementById('datamartChatWindow');
+            const closeBtn = document.getElementById('datamartChatClose');
+            const messagesEl = document.getElementById('datamartMessages');
+            const inputEl = document.getElementById('datamartChatInput');
+            const sendBtn = document.getElementById('datamartChatSend');
+
+            let isOpen = false;
+            let isWaiting = false;
+
+            // ============================================================
+            // Utility: Get current timestamp
+            // ============================================================
+            function getTime() {
+                const now = new Date();
+                return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            // ============================================================
+            // Render messages
+            // ============================================================
+            function renderMessage(text, sender, timestamp) {
+                const div = document.createElement('div');
+                div.className = `datamart-widget-message ${sender}`;
+                div.innerHTML = `
+                    <div>${text}</div>
+                    <div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:${sender === 'user' ? 'right' : 'left'}">${timestamp || getTime()}</div>
+                `;
+                messagesEl.appendChild(div);
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+
+            // ============================================================
+            // Show typing indicator
+            // ============================================================
+            function showTyping() {
+                const div = document.createElement('div');
+                div.className = 'datamart-widget-typing';
+                div.id = 'datamartTyping';
+                div.innerHTML = '<span></span><span></span><span></span>';
+                messagesEl.appendChild(div);
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+
+            function hideTyping() {
+                const typing = document.getElementById('datamartTyping');
+                if (typing) typing.remove();
+            }
+
+            // ============================================================
+            // Send message to backend (UPDATED WITH BETTER ERROR HANDLING)
+            // ============================================================
+            async function sendMessage(question) {
+                if (!question || question.trim() === '') return;
+                if (isWaiting) return;
+
+                const trimmed = question.trim();
+
+                // Render user message
+                renderMessage(trimmed, 'user');
+                inputEl.value = '';
+                isWaiting = true;
+                sendBtn.disabled = true;
+
+                showTyping();
+
+                try {
+                    const response = await fetch(CONFIG.API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ question: trimmed })
+                    });
+
+                    hideTyping();
+
+                    // Try to parse the response
+                    let data = {};
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        // If response is not valid JSON, use a friendly message
+                        renderMessage("I'm still learning and couldn't find the answer to your question. Please try rephrasing, or reach out to our team at info@dtm.io for assistance.", 'bot');
+                        return;
+                    }
+
+                    // Check if the backend returned a friendly error message
+                    if (data && data.answer) {
+                        renderMessage(data.answer, 'bot');
+                        return;
+                    }
+
+                    // If response is not OK but has no answer field
+                    if (!response.ok) {
+                        renderMessage("I'm having trouble right now. Please try again in a moment. If the issue persists, contact us at info@dtm.io.", 'bot');
+                        return;
+                    }
+
+                    // If we have an answer, display it
+                    const answer = data.answer || data.response || data.message || 'No response received.';
+                    renderMessage(answer, 'bot');
+
+                } catch (error) {
+                    hideTyping();
+                    // User-friendly error message for connection issues
+                    renderMessage("🔌 I'm having connection issues. Please check your internet and try again. If the problem continues, contact us at info@dtm.io.", 'bot');
+                } finally {
+                    isWaiting = false;
+                    sendBtn.disabled = false;
+                    inputEl.focus();
+                }
+            }
+
+            // ============================================================
+            // Initialize - Show welcome message
+            // ============================================================
+            function initWidget() {
+                messagesEl.innerHTML = '';
+                renderMessage(CONFIG.WELCOME_MESSAGE, 'bot');
+
+                // Set up suggested question clicks
+                document.querySelectorAll('.datamart-widget-suggestion-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const q = this.dataset.question || this.textContent.trim();
+                        sendMessage(q);
+                    });
+                });
+            }
+
+            // ============================================================
+            // Toggle widget
+            // ============================================================
+            function toggleWidget() {
+                isOpen = !isOpen;
+                windowEl.classList.toggle('open', isOpen);
+                button.classList.toggle('pulse', !isOpen);
+
+                if (isOpen) {
+                    if (messagesEl.children.length === 0) {
+                        initWidget();
+                    }
+                    inputEl.focus();
+                    messagesEl.scrollTop = messagesEl.scrollHeight;
+                }
+            }
+
+            // ============================================================
+            // Event Listeners
+            // ============================================================
+            button.addEventListener('click', toggleWidget);
+            closeBtn.addEventListener('click', toggleWidget);
+
+            sendBtn.addEventListener('click', function() {
+                sendMessage(inputEl.value);
+            });
+
+            inputEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sendMessage(inputEl.value);
+                }
+            });
+
+            // ============================================================
+            // Init widget on load
+            // ============================================================
+            initWidget();
+
+            console.log('✅ Datamart Chat Widget loaded successfully!');
+            console.log('📡 API_URL:', CONFIG.API_URL);
+
+        })();
+    </script>
+
+</body>
+</html>
