@@ -1,6 +1,7 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/dtmindex.html" },
-    { "source": "/((?!dtmindex.html|assets|.*\\..*).*)", "destination": "/index.html" }
+  "routes": [
+    { "src": "/", "dest": "/dtmindex.html" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
