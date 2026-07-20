@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Studies | 150+ Successful Projects - Datamart Inc</title>
+<style>
+    /* ============================================================
+       DATAMART CASE STUDIES PAGE - Brand Colors: #D61903
+       ============================================================ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #1a1a1a;
+        background: #f8f9fa;
+        line-height: 1.6;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ---- TOP BAR ---- */
+    .top-bar {
+        background: #1a1a1a;
+        color: #ccc;
+        font-size: 13px;
+        padding: 8px 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        position: relative;
+    }
+
+    .top-bar a { color: #ccc; }
+    .top-bar a:hover { color: #fff; }
+
+    .top-bar .divider { color: #555; }
+
+    .top-bar .close-bar {
+        position: absolute;
+        right: 20px;
+        background: none;
+        border: none;
+        color: #999;
+        font-size: 16px;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .top-bar .close-bar:hover { color: #fff; }
+
+    /* ---- HEADER / MEGA NAV ---- */
+    .site-header {
+        background: #fff;
+        border-bottom: 1px solid #e9ecef;
+        padding: 14px 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .site-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .site-logo .logo-mark {
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+    }
+
+    .site-logo .logo-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+    }
+
+    .site-logo .logo-text .name {
+        font-size: 19px;
+        font-weight: 800;
+        color: #1a1a1a;
+    }
+
+    .site-logo .logo-text .name span { color: #D61903; }
+
+    .site-logo .logo-text .tag {
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: #999;
+        font-weight: 600;
+    }
+
+    .mega-nav {
+        display: flex;
+        gap: 28px;
+        align-items: center;
+    }
+
+    .mega-nav > .nav-item {
+        position: relative;
+    }
+
+    .mega-nav > .nav-item > a,
+    .mega-nav > .nav-item > button {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: none;
+        border: none;
+        font: inherit;
+        cursor: pointer;
+        text-decoration: none;
+        color: #3a3a3a;
+        font-size: 14.5px;
+        font-weight: 600;
+        padding: 8px 0;
+        transition: color 0.2s;
+    }
+
+    .mega-nav > .nav-item.active > a,
+    .mega-nav > .nav-item.active > button {
+        color: #D61903;
+    }
+
+    .mega-nav > .nav-item > a:hover,
+    .mega-nav > .nav-item > button:hover {
+        color: #D61903;
+    }
+
+    .mega-nav .caret {
+        font-size: 10px;
+        transition: transform 0.2s;
+    }
+
+    .mega-nav .nav-item:hover .caret {
+        transform: rotate(180deg);
+    }
+
+    .nav-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 12px 32px rgba(0,0,0,0.14);
+        padding: 10px;
+        min-width: 220px;
+        display: none;
+        flex-direction: column;
+        gap: 2px;
+        border: 1px solid #eee;
+    }
+
+    .nav-item:hover .nav-dropdown {
+        display: flex;
+    }
+
+    .nav-dropdown a {
+        padding: 9px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #4a4a4a;
+        font-weight: 500;
+    }
+
+    .nav-dropdown a:hover {
+        background: #fdf1ef;
+        color: #D61903;
+    }
+
+    .header-cta {
+        background: #D61903;
+        color: #fff;
+        padding: 11px 22px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 14.5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s;
+        white-space: nowrap;
+    }
+
+    .header-cta:hover { background: #b01503; }
+
+    /* ---- HERO ---- */
+    .cs-hero {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 70px 40px 40px;
+        text-align: center;
+        background: linear-gradient(180deg, #fef4f2 0%, #f8f9fa 100%);
+    }
+
+    .cs-hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #fde2dd;
+        color: #D61903;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 8px 18px;
+        border-radius: 20px;
+        margin-bottom: 24px;
+    }
+
+    .cs-hero h1 {
+        font-size: 48px;
+        font-weight: 800;
+        line-height: 1.15;
+        margin-bottom: 20px;
+    }
+
+    .cs-hero h1 .accent {
+        color: #D61903;
+        display: block;
+    }
+
+    .cs-hero p {
+        font-size: 17px;
+        color: #6a6a6a;
+        max-width: 640px;
+        margin: 0 auto;
+    }
+
+    /* ---- STATS ---- */
+    .cs-stats {
+        max-width: 1000px;
+        margin: 40px auto 0;
+        padding: 0 40px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+
+    .cs-stat-card {
+        background: #fff;
+        border: 1px solid #eee;
+        border-radius: 10px;
+        padding: 22px 12px;
+        text-align: center;
+    }
+
+    .cs-stat-card .num {
+        font-size: 30px;
+        font-weight: 800;
+        color: #D61903;
+    }
+
+    .cs-stat-card .label {
+        font-size: 13px;
+        color: #777;
+        margin-top: 2px;
+    }
+
+    /* ---- FILTER TABS ---- */
+    .filter-tabs {
+        max-width: 1200px;
+        margin: 40px auto 0;
+        padding: 0 40px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .filter-tab {
+        background: #f0f0f0;
+        border: none;
+        padding: 9px 18px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a4a4a;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .filter-tab .count {
+        background: rgba(0,0,0,0.08);
+        padding: 1px 7px;
+        border-radius: 10px;
+        font-size: 12px;
+    }
+
+    .filter-tab.active {
+        background: #D61903;
+        color: #fff;
+    }
+
+    .filter-tab.active .count {
+        background: rgba(255,255,255,0.25);
+    }
+
+    .filter-tab:hover:not(.active) {
+        background: #e4e4e4;
+    }
+
+    /* ---- CHIP FILTER ROWS ---- */
+    .chip-row {
+        max-width: 1200px;
+        margin: 16px auto 0;
+        padding: 0 40px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .chip {
+        background: #f0f0f0;
+        border: none;
+        padding: 7px 16px;
+        border-radius: 18px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #4a4a4a;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .chip.active {
+        background: #1a1a1a;
+        color: #fff;
+    }
+
+    .chip.industry.active {
+        background: #D61903;
+        color: #fff;
+    }
+
+    .chip:hover:not(.active) { background: #e4e4e4; }
+
+    .chip-divider {
+        border: none;
+        border-top: 1px solid #e9ecef;
+        max-width: 1200px;
+        margin: 24px auto 0;
+    }
+
+    /* ---- SECTION HEADINGS ---- */
+    .cs-section {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 40px 0;
+    }
+
+    .cs-section h2 {
+        font-size: 22px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+
+    /* ---- FEATURED CARDS ---- */
+    .featured-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+    }
+
+    .featured-card {
+        position: relative;
+        border-radius: 14px;
+        overflow: hidden;
+        min-height: 340px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 26px;
+        color: #fff;
+        background-size: cover;
+        background-position: center;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .featured-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(10,10,10,0.15) 0%, rgba(5,5,5,0.88) 78%);
+    }
+
+    .featured-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+    }
+
+    .featured-card > * { position: relative; z-index: 1; }
+
+    .card-top-row {
+        position: absolute;
+        top: 18px;
+        left: 26px;
+        right: 26px;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .duration-badge {
+        background: rgba(255,255,255,0.16);
+        backdrop-filter: blur(4px);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 14px;
+    }
+
+    .featured-badge {
+        background: #D61903;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 14px;
+    }
+
+    .tag-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .tag {
+        background: rgba(255,255,255,0.14);
+        backdrop-filter: blur(4px);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 11px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .tag.accent {
+        background: #D61903;
+    }
+
+    .featured-card h3 {
+        font-size: 23px;
+        font-weight: 700;
+        margin-bottom: 6px;
+        line-height: 1.25;
+    }
+
+    .featured-card .client {
+        font-size: 13px;
+        color: #ddd;
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
+    .featured-card .problem {
+        font-size: 14px;
+        color: #e4e4e4;
+        margin-bottom: 16px;
+        max-width: 90%;
+    }
+
+    .result-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .result-pill {
+        background: rgba(255,255,255,0.14);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 12px;
+    }
+
+    .read-more {
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* ---- STANDARD CARDS ---- */
+    .standard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+    }
+
+    .standard-card {
+        background: #fff;
+        border: 1px solid #f0dedb;
+        border-left: 4px solid #D61903;
+        border-radius: 10px;
+        padding: 26px;
+    }
+
+    .standard-card .tag-row .tag {
+        background: #fdece9;
+        color: #D61903;
+        border: 1px solid #f7c9c1;
+    }
+
+    .standard-card h3 {
+        font-size: 19px;
+        font-weight: 700;
+        color: #D61903;
+        margin-bottom: 4px;
+    }
+
+    .standard-card .client {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 10px;
+        font-weight: 500;
+    }
+
+    .standard-card .problem {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 14px;
+    }
+
+    .standard-card .result-line {
+        font-size: 13px;
+        font-weight: 700;
+        color: #D61903;
+        margin-bottom: 14px;
+    }
+
+    .standard-card .read-more {
+        color: #D61903;
+    }
+
+    /* ---- HIGHLIGHT CARDS ---- */
+    .highlight-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+
+    .highlight-card {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 22px;
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .highlight-card:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.07);
+        transform: translateY(-3px);
+    }
+
+    .highlight-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .highlight-badge {
+        background: #f0f0f0;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #555;
+        padding: 4px 10px;
+        border-radius: 10px;
+    }
+
+    .highlight-year {
+        font-size: 12px;
+        color: #999;
+        font-weight: 600;
+    }
+
+    .highlight-card h3 {
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .highlight-card p {
+        font-size: 13.5px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+
+    .highlight-result {
+        font-size: 13px;
+        font-weight: 700;
+        color: #D61903;
+    }
+
+    /* ---- CTA BANNER ---- */
+    .cta-banner {
+        background: #D61903;
+        text-align: center;
+        padding: 64px 40px;
+        margin-top: 60px;
+        color: #fff;
+    }
+
+    .cta-banner h2 {
+        font-size: 30px;
+        font-weight: 800;
+        margin-bottom: 12px;
+    }
+
+    .cta-banner p {
+        font-size: 16px;
+        color: #ffe2de;
+        max-width: 560px;
+        margin: 0 auto 26px;
+    }
+
+    .cta-banner .btn-white {
+        background: #fff;
+        color: #D61903;
+        font-weight: 700;
+        padding: 13px 30px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.2s;
+    }
+
+    .cta-banner .btn-white:hover { transform: translateY(-2px); }
+
+    /* ---- AUDIT BANNER ---- */
+    .audit-banner {
+        background: #16171a;
+        color: #fff;
+        padding: 44px 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+
+    .audit-banner-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+
+    .audit-banner h3 {
+        font-size: 21px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .audit-banner p {
+        font-size: 14px;
+        color: #aaa;
+    }
+
+    .audit-btn {
+        background: #D61903;
+        color: #fff;
+        font-weight: 700;
+        padding: 13px 26px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .audit-btn:hover { background: #b01503; }
+
+    /* ---- FOOTER ---- */
+    .site-footer {
+        background: #101012;
+        color: #999;
+        padding: 56px 40px 30px;
+    }
+
+    .footer-grid {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
+        gap: 30px;
+    }
+
+    .footer-brand .footer-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .footer-brand .footer-logo .name {
+        font-size: 18px;
+        font-weight: 800;
+        color: #fff;
+    }
+
+    .footer-brand .footer-logo .name span { color: #D61903; }
+
+    .footer-brand p {
+        font-size: 13.5px;
+        line-height: 1.7;
+        margin-bottom: 16px;
+        color: #999;
+    }
+
+    .footer-contact {
+        font-size: 13.5px;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 8px;
+        color: #aaa;
+    }
+
+    .footer-social {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .footer-social a {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+    }
+    .footer-social a:hover { background: #D61903; }
+
+    .footer-col h4 {
+        font-size: 12.5px;
+        letter-spacing: 0.6px;
+        color: #777;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+
+    .footer-col a {
+        display: block;
+        font-size: 13.5px;
+        color: #bbb;
+        margin-bottom: 12px;
+    }
+    .footer-col a:hover { color: #fff; }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 900px) {
+        .mega-nav { display: none; }
+        .cs-hero h1 { font-size: 34px; }
+        .cs-stats { grid-template-columns: repeat(2, 1fr); }
+        .featured-grid, .standard-grid, .highlight-grid { grid-template-columns: 1fr; }
+        .footer-grid { grid-template-columns: 1fr 1fr; }
+        .top-bar { font-size: 11px; padding: 8px 16px; gap: 12px; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+TOP BAR
+============================================================ -->
+<div class="top-bar" id="topBar">
+    <span>✉️ hello@dtm.io</span>
+    <span class="divider">|</span>
+    <span>📞 +1 (650) 640-3837</span>
+    <span class="divider">|</span>
+    <span>Palo Alto, CA • 24/7 Support</span>
+    <button class="close-bar" id="closeTopBar" aria-label="Dismiss">✕</button>
+</div>
+
+<!-- ============================================================
+SITE HEADER / MEGA NAV
+============================================================ -->
+<header class="site-header">
+    <a href="dtmindex.html" class="site-logo">
+        <svg class="logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 3 L36 34 H4 Z" fill="#D61903"/>
+            <path d="M20 3 L36 34 L20 27 Z" fill="#8f1000"/>
+        </svg>
+        <span class="logo-text">
+            <span class="name">Datamart <span>Inc</span></span>
+            <span class="tag">INC</span>
+        </span>
+    </a>
+
+    <nav class="mega-nav">
+        <div class="nav-item">
+            <a href="dtmindex.html#services">AI Development <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="#">AI Development Services</a>
+                <a href="#">Agentic AI</a>
+                <a href="#">LLM Integration</a>
+                <a href="#">RAG Pipelines</a>
+                <a href="#">AI Chatbots</a>
+                <a href="#">Workflow Automation</a>
+            </div>
+        </div>
+        <div class="nav-item">
+            <a href="#">AI Security <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="#">AI Risk Assessment</a>
+                <a href="#">Model Red-Teaming</a>
+                <a href="#">Compliance Review</a>
+            </div>
+        </div>
+        <div class="nav-item">
+            <a href="dtmindex.html#services">Services <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="#">Staff Augmentation</a>
+                <a href="#">Dedicated Teams</a>
+                <a href="#">MVP Development</a>
+                <a href="#">Custom Software</a>
+                <a href="#">Web App Development</a>
+                <a href="#">Mobile App Development</a>
+            </div>
+        </div>
+        <div class="nav-item">
+            <a href="#">Industries <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="#">Real Estate & PropTech</a>
+                <a href="#">FinTech & Banking</a>
+                <a href="#">Healthcare & MedTech</a>
+                <a href="#">E-commerce & Retail</a>
+            </div>
+        </div>
+        <div class="nav-item">
+            <a href="dtmindex.html#tech-stack">Tech Stack <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="#">MERN Stack</a>
+                <a href="#">Python Development</a>
+                <a href="#">.NET & C#</a>
+                <a href="#">Mobile Development</a>
+            </div>
+        </div>
+        <div class="nav-item active">
+            <a href="case-studies.html">Company <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="#">About Us</a>
+                <a href="case-studies.html">Case Studies</a>
+                <a href="#">Clients</a>
+                <a href="#">Careers</a>
+                <a href="#">Blog</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <a href="#" class="header-cta">📞 Get a Free Audit</a>
+</header>
+
+<!-- ============================================================
+HERO
+============================================================ -->
+<section class="cs-hero">
+    <span class="cs-hero-pill">💼 Our Portfolio</span>
+    <h1>Proven Results<span class="accent">Real Impact</span></h1>
+    <p>Explore how we've helped businesses across industries transform their operations, delight customers, and achieve measurable growth through technology.</p>
+</section>
+
+<div class="cs-stats">
+    <div class="cs-stat-card"><div class="num">150+</div><div class="label">Projects Delivered</div></div>
+    <div class="cs-stat-card"><div class="num">10+</div><div class="label">Years Experience</div></div>
+    <div class="cs-stat-card"><div class="num">99.9%</div><div class="label">Average Uptime</div></div>
+    <div class="cs-stat-card"><div class="num">50+</div><div class="label">Happy Clients</div></div>
+</div>
+
+<!-- ============================================================
+FILTER TABS
+============================================================ -->
+<div class="filter-tabs">
+    <button class="filter-tab active" data-status="all">All <span class="count" id="count-all">12</span></button>
+    <button class="filter-tab" data-status="featured">Featured <span class="count" id="count-featured">4</span></button>
+    <button class="filter-tab" data-status="standard">Standard <span class="count" id="count-standard">2</span></button>
+    <button class="filter-tab" data-status="highlight">Highlights <span class="count" id="count-highlight">6</span></button>
+</div>
+
+<div class="chip-row" id="industryChips">
+    <button class="chip industry active" data-industry="all">🔽 All Industries</button>
+    <button class="chip industry" data-industry="Real Estate">🏢 Real Estate</button>
+    <button class="chip industry" data-industry="Healthcare">❤️ Healthcare</button>
+    <button class="chip industry" data-industry="FinTech">🏦 FinTech</button>
+    <button class="chip industry" data-industry="E-commerce">🛒 E-commerce</button>
+    <button class="chip industry" data-industry="Analytics">📈 Analytics</button>
+    <button class="chip industry" data-industry="Cloud/ML">☁️ Cloud/ML</button>
+    <button class="chip industry" data-industry="Marketing">⚡ Marketing</button>
+    <button class="chip industry" data-industry="Education">🎓 Education</button>
+</div>
+
+<hr class="chip-divider">
+
+<!-- ============================================================
+FEATURED CASE STUDIES
+============================================================ -->
+<section class="cs-section" id="section-featured">
+    <h2>⭐ Featured Case Studies</h2>
+    <div class="featured-grid">
+
+        <div class="cs-card featured-card" data-status="featured" data-industry="Analytics" style="background-image: url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=700&h=500&fit=crop&crop=center');">
+            <div class="card-top-row">
+                <span class="duration-badge">Ongoing (Beta)</span>
+                <span class="featured-badge">Featured</span>
+            </div>
+            <div class="tag-row">
+                <span class="tag">📈 Analytics</span>
+                <span class="tag accent">AI/ML</span>
+                <span class="tag accent">React</span>
+            </div>
+            <h3>RubyOrbit Priority AI (Internal Venture)</h3>
+            <div class="client">Datamart Labs</div>
+            <p class="problem">Sales teams struggle with CRM data overload, unpredictable lead prioritization, and knowing the next best action to move deals forward.</p>
+            <div class="result-row">
+                <span class="result-pill">AI-Powered Lead Scoring</span>
+                <span class="result-pill">Tactical Playbook Generation</span>
+                <span class="result-pill">Live in Private Beta</span>
+            </div>
+            <a href="#" class="read-more">Read Case Study →</a>
+        </div>
+
+        <div class="cs-card featured-card" data-status="featured" data-industry="Analytics" style="background-image: url('https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=700&h=500&fit=crop&crop=center');">
+            <div class="card-top-row">
+                <span class="duration-badge">8 weeks</span>
+                <span class="featured-badge">Featured</span>
+            </div>
+            <div class="tag-row">
+                <span class="tag">📈 Analytics</span>
+                <span class="tag accent">Swift</span>
+                <span class="tag accent">Mobile</span>
+            </div>
+            <h3>Mobile SDK Modernization for Woopra</h3>
+            <div class="client">Woopra</div>
+            <p class="problem">Legacy Objective-C SDK becoming outdated as Swift gained dominance, limiting developer adoption and increasing maintenance burden.</p>
+            <div class="result-row">
+                <span class="result-pill">100% Feature Parity</span>
+                <span class="result-pill">60% Faster Performance</span>
+                <span class="result-pill">80% Test Coverage</span>
+            </div>
+            <a href="#" class="read-more">Read Case Study →</a>
+        </div>
+
+        <div class="cs-card featured-card" data-status="featured" data-industry="Analytics" style="background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=700&h=500&fit=crop&crop=center');">
+            <div class="card-top-row">
+                <span class="duration-badge">8 weeks</span>
+                <span class="featured-badge">Featured</span>
+            </div>
+            <div class="tag-row">
+                <span class="tag">📈 Analytics</span>
+                <span class="tag accent">PHP</span>
+                <span class="tag accent">Java</span>
+            </div>
+            <h3>Enterprise API Developer Portal</h3>
+            <div class="client">Fortune 500 Data Services Company</div>
+            <p class="problem">No centralized developer resource for APIs, causing long onboarding times and high support burden from basic integration questions.</p>
+            <div class="result-row">
+                <span class="result-pill">70% Faster Onboarding</span>
+                <span class="result-pill">50% Less Support Tickets</span>
+                <span class="result-pill">3x API Adoption Growth</span>
+            </div>
+            <a href="#" class="read-more">Read Case Study →</a>
+        </div>
+
+        <div class="cs-card featured-card" data-status="featured" data-industry="Healthcare" style="background-image: url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=700&h=500&fit=crop&crop=center');">
+            <div class="card-top-row">
+                <span class="duration-badge">Long-term</span>
+                <span class="featured-badge">Featured</span>
+            </div>
+            <div class="tag-row">
+                <span class="tag">❤️ Healthcare</span>
+                <span class="tag accent">Python</span>
+                <span class="tag accent">AI/ML</span>
+            </div>
+            <h3>Staff Augmentation for HeartFlow</h3>
+            <div class="client">HeartFlow</div>
+            <p class="problem">Difficulty finding engineers with both cloud expertise and healthcare domain knowledge, plus rapid scaling needs under HIPAA compliance requirements.</p>
+            <div class="result-row">
+                <span class="result-pill">40% Faster Development</span>
+                <span class="result-pill">95% On-Time Delivery</span>
+                <span class="result-pill">Zero Security Incidents</span>
+            </div>
+            <a href="#" class="read-more">Read Case Study →</a>
+        </div>
+
+    </div>
+</section>
+
+<!-- ============================================================
+STANDARD CASE STUDIES
+============================================================ -->
+<section class="cs-section" id="section-standard">
+    <h2>🕐 Standard Case Studies</h2>
+    <div class="standard-grid">
+
+        <div class="cs-card standard-card" data-status="standard" data-industry="Cloud/ML">
+            <div class="tag-row">
+                <span class="tag">☁️ Cloud/ML</span>
+                <span class="tag">Python</span>
+                <span class="tag">Cloud</span>
+            </div>
+            <h3>Cloud Management Platform Development</h3>
+            <div class="client">DevOps Platform Company</div>
+            <p class="problem">Needed to ship features faster to compete, requiring engineers with deep cloud infrastructure knowledge for auto-scaling algorithms.</p>
+            <div class="result-line">• Faster Feature Velocity &nbsp;• High Platform Stability &nbsp;• Improved Customer Cost Savings</div>
+            <a href="#" class="read-more">Read Case Study →</a>
+        </div>
+
+        <div class="cs-card standard-card" data-status="standard" data-industry="Analytics">
+            <div class="tag-row">
+                <span class="tag">📈 Analytics</span>
+                <span class="tag">Python</span>
+                <span class="tag">AI/ML</span>
+                <span class="tag">React</span>
+            </div>
+            <h3>Voice Analytics Platform Engineering</h3>
+            <div class="client">VoiceBase (acquired by LivePerson)</div>
+            <p class="problem">Rapid growth outpacing hiring, with complex AI-powered voice analytics requiring sophisticated engineering for millions of customer calls.</p>
+            <div class="result-line">• 40% Faster Development &nbsp;• 2x Pipeline Throughput &nbsp;• 50% Faster API Response</div>
+            <a href="#" class="read-more">Read Case Study →</a>
+        </div>
+
+    </div>
+</section>
+
+<!-- ============================================================
+PROJECT HIGHLIGHTS
+============================================================ -->
+<section class="cs-section" id="section-highlight">
+    <h2>⚡ Project Highlights</h2>
+    <div class="highlight-grid">
+
+        <div class="cs-card highlight-card" data-status="highlight" data-industry="E-commerce">
+            <div class="highlight-top"><span class="highlight-badge">E-commerce</span><span class="highlight-year">2016-2019</span></div>
+            <h3>Data Platform for Retail Analytics</h3>
+            <p>Needed a data platform to process millions of customer transactions and provide insights to retailers.</p>
+            <div class="highlight-result">Millions Transactions Daily</div>
+        </div>
+
+        <div class="cs-card highlight-card" data-status="highlight" data-industry="Cloud/ML">
+            <div class="highlight-top"><span class="highlight-badge">Cloud/ML</span><span class="highlight-year">2 months</span></div>
+            <h3>Frontend for Storage Technology</h3>
+            <p>Storage technology company needed an experienced frontend engineer for their product interface.</p>
+            <div class="highlight-result">Production-Quality Code</div>
+        </div>
+
+        <div class="cs-card highlight-card" data-status="highlight" data-industry="Education">
+            <div class="highlight-top"><span class="highlight-badge">Education</span><span class="highlight-year">2018</span></div>
+            <h3>Education Technology Platform</h3>
+            <p>Education technology project needed full-stack development for their learning platform.</p>
+            <div class="highlight-result">Complete Platform</div>
+        </div>
+
+        <div class="cs-card highlight-card" data-status="highlight" data-industry="Real Estate">
+            <div class="highlight-top"><span class="highlight-badge">Real Estate</span><span class="highlight-year">2021</span></div>
+            <h3>AI-Powered Property Valuation Tool</h3>
+            <p>Agents relying on manual comparables analysis, resulting in inaccurate valuations and lost deals.</p>
+            <div class="highlight-result">95% Valuation Accuracy</div>
+        </div>
+
+        <div class="cs-card highlight-card" data-status="highlight" data-industry="FinTech">
+            <div class="highlight-top"><span class="highlight-badge">FinTech</span><span class="highlight-year">2022</span></div>
+            <h3>Stock Market Analytics Platform</h3>
+            <p>Traders needed real-time stock market analysis with data-driven insights for monetization strategies.</p>
+            <div class="highlight-result">Real-Time Analysis</div>
+        </div>
+
+        <div class="cs-card highlight-card" data-status="highlight" data-industry="Real Estate">
+            <div class="highlight-top"><span class="highlight-badge">Real Estate</span><span class="highlight-year">2023</span></div>
+            <h3>Tenant Self-Service Portal</h3>
+            <p>Property managers drowning in phone calls for maintenance requests, lease renewals, and payment inquiries.</p>
+            <div class="highlight-result">70% Fewer Phone Calls</div>
+        </div>
+
+    </div>
+</section>
+
+<p id="noResults" style="display:none; text-align:center; color:#888; padding:60px 40px; max-width:1200px; margin:0 auto;">No case studies match this filter yet.</p>
+
+<!-- ============================================================
+CTA BANNER
+============================================================ -->
+<section class="cta-banner">
+    <h2>Ready to Start Your Project?</h2>
+    <p>Let's discuss how we can help you achieve similar results. Our team is ready to tackle your next challenge.</p>
+    <a href="dtmindex.html#contact" class="btn-white">Get in Touch →</a>
+</section>
+
+<!-- ============================================================
+AUDIT BANNER
+============================================================ -->
+<div class="audit-banner">
+    <div class="audit-banner-inner">
+        <div>
+            <h3>Not sure where to start?</h3>
+            <p>Let us audit your current setup and show you exactly where software can save you time and money.</p>
+        </div>
+        <a href="#" class="audit-btn">Get a Free Technical Audit →</a>
+    </div>
+</div>
+
+<!-- ============================================================
+FOOTER
+============================================================ -->
+<footer class="site-footer">
+    <div class="footer-grid">
+        <div class="footer-brand">
+            <div class="footer-logo">
+                <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 3 L36 34 H4 Z" fill="#D61903"/>
+                    <path d="M20 3 L36 34 L20 27 Z" fill="#8f1000"/>
+                </svg>
+                <span class="name">Datamart <span>Inc</span></span>
+            </div>
+            <p>Software development for startups and small businesses. Staff augmentation, MVP development, SaaS maintenance, and AI automation. Headquartered in Palo Alto, CA.</p>
+            <div class="footer-contact">📍 3790 El Camino Real #1297, Palo Alto, CA 94306</div>
+            <div class="footer-contact">📞 +1 (650) 640-3837</div>
+            <div class="footer-contact">✉️ hello@dtm.io</div>
+            <div class="footer-social">
+                <a href="#" aria-label="LinkedIn">in</a>
+                <a href="#" aria-label="GitHub">gh</a>
+            </div>
+        </div>
+        <div class="footer-col">
+            <h4>AI DEVELOPMENT</h4>
+            <a href="#">AI Development Services</a>
+            <a href="#">Agentic AI</a>
+            <a href="#">LLM Integration</a>
+            <a href="#">RAG Pipelines</a>
+            <a href="#">AI Chatbots</a>
+        </div>
+        <div class="footer-col">
+            <h4>SERVICES</h4>
+            <a href="#">Staff Augmentation</a>
+            <a href="#">MVP Development</a>
+            <a href="#">Custom Software</a>
+            <a href="#">Web App Development</a>
+            <a href="#">Mobile App Development</a>
+        </div>
+        <div class="footer-col">
+            <h4>TECH STACK</h4>
+            <a href="#">MERN Stack</a>
+            <a href="#">Python Development</a>
+            <a href="#">.NET & C#</a>
+            <a href="#">Mobile Development</a>
+        </div>
+        <div class="footer-col">
+            <h4>COMPANY</h4>
+            <a href="#">About Us</a>
+            <a href="case-studies.html">Case Studies</a>
+            <a href="#">Careers</a>
+            <a href="#">Contact</a>
+        </div>
+    </div>
+</footer>
+
+<!-- ============================================================
+CHAT WIDGET (same as demo homepage)
+============================================================ -->
+<button class="datamart-widget-button pulse" id="datamartChatButton" aria-label="Open chat" style="position:fixed;bottom:24px;right:24px;width:60px;height:60px;border-radius:50%;background:#D61903;color:#fff;border:none;box-shadow:0 4px 20px rgba(214,25,3,0.4);cursor:pointer;z-index:99999;display:flex;align-items:center;justify-content:center;font-size:28px;">💬</button>
+
+<div class="datamart-widget-window" id="datamartChatWindow" style="position:fixed;bottom:96px;right:24px;width:380px;height:520px;max-height:calc(100vh - 120px);background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.16);display:none;flex-direction:column;z-index:99999;overflow:hidden;">
+    <div style="background:#D61903;color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px;"><span>💬</span> Datamart AI</div>
+        <button id="datamartChatClose" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;opacity:0.8;">✕</button>
+    </div>
+    <div id="datamartMessages" style="flex:1;overflow-y:auto;padding:16px 20px;background:#f7f7f8;"></div>
+    <div style="padding:8px 20px 12px;display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid #eee;background:#fff;">
+        <button class="datamart-widget-suggestion-btn" data-question="What services does Datamart offer?" style="background:#f0f0f0;border:none;padding:6px 14px;border-radius:16px;font-size:12px;color:#333;cursor:pointer;">What services?</button>
+        <button class="datamart-widget-suggestion-btn" data-question="How much does staff augmentation cost?" style="background:#f0f0f0;border:none;padding:6px 14px;border-radius:16px;font-size:12px;color:#333;cursor:pointer;">Pricing</button>
+    </div>
+    <div style="display:flex;gap:8px;padding:12px 20px;border-top:1px solid #eee;background:#fff;">
+        <input type="text" id="datamartChatInput" placeholder="Ask a question..." style="flex:1;border:1px solid #ddd;border-radius:24px;padding:8px 16px;font-size:14px;outline:none;" />
+        <button id="datamartChatSend" aria-label="Send message" style="background:#D61903;color:#fff;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:18px;">➤</button>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    /* ---- Top bar dismiss ---- */
+    document.getElementById('closeTopBar').addEventListener('click', function() {
+        document.getElementById('topBar').style.display = 'none';
+    });
+
+    /* ---- Filtering ---- */
+    var statusFilter = 'all';
+    var industryFilter = 'all';
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.cs-card'));
+    var sections = {
+        featured: document.getElementById('section-featured'),
+        standard: document.getElementById('section-standard'),
+        highlight: document.getElementById('section-highlight')
+    };
+    var noResults = document.getElementById('noResults');
+
+    function applyFilters() {
+        var visibleCount = 0;
+        cards.forEach(function(card) {
+            var matchesStatus = statusFilter === 'all' || card.dataset.status === statusFilter;
+            var matchesIndustry = industryFilter === 'all' || card.dataset.industry === industryFilter;
+            var show = matchesStatus && matchesIndustry;
+            card.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+
+        ['featured', 'standard', 'highlight'].forEach(function(key) {
+            var sectionVisible = (statusFilter === 'all' || statusFilter === key);
+            var anyCardVisible = Array.prototype.some.call(
+                sections[key].querySelectorAll('.cs-card'),
+                function(c) { return c.style.display !== 'none'; }
+            );
+            sections[key].style.display = (sectionVisible && anyCardVisible) ? '' : 'none';
+        });
+
+        noResults.style.display = visibleCount === 0 ? '' : 'none';
+    }
+
+    document.querySelectorAll('.filter-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+            tab.classList.add('active');
+            statusFilter = tab.dataset.status;
+            applyFilters();
+        });
+    });
+
+    document.querySelectorAll('.chip.industry').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            document.querySelectorAll('.chip.industry').forEach(function(c) { c.classList.remove('active'); });
+            chip.classList.add('active');
+            industryFilter = chip.dataset.industry;
+            applyFilters();
+        });
+    });
+
+    /* ---- Chat widget (same behavior as homepage demo) ---- */
+    var CONFIG = { API_URL: 'http://localhost:8000/chat-public', WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!" };
+    var button = document.getElementById('datamartChatButton');
+    var windowEl = document.getElementById('datamartChatWindow');
+    var closeBtn = document.getElementById('datamartChatClose');
+    var messagesEl = document.getElementById('datamartMessages');
+    var inputEl = document.getElementById('datamartChatInput');
+    var sendBtn = document.getElementById('datamartChatSend');
+    var isOpen = false, isWaiting = false;
+
+    function getTime() {
+        var now = new Date();
+        return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderMessage(text, sender) {
+        var div = document.createElement('div');
+        var isUser = sender === 'user';
+        div.style.cssText = 'margin-bottom:12px;max-width:85%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.5;word-wrap:break-word;' +
+            (isUser ? 'background:#D61903;color:#fff;margin-left:auto;border-bottom-right-radius:4px;' : 'background:#e9ecef;color:#1a1a1a;margin-right:auto;border-bottom-left-radius:4px;');
+        div.innerHTML = '<div>' + text + '</div><div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:' + (isUser ? 'right' : 'left') + '">' + getTime() + '</div>';
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function initWidget() {
+        messagesEl.innerHTML = '';
+        renderMessage(CONFIG.WELCOME_MESSAGE, 'bot');
+        document.querySelectorAll('.datamart-widget-suggestion-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { sendMessage(this.dataset.question || this.textContent.trim()); });
+        });
+    }
+
+    function sendMessage(question) {
+        if (!question || question.trim() === '' || isWaiting) return;
+        var trimmed = question.trim();
+        renderMessage(trimmed, 'user');
+        inputEl.value = '';
+        isWaiting = true;
+        sendBtn.disabled = true;
+
+        fetch(CONFIG.API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: trimmed })
+        }).then(function(response) {
+            return response.json().catch(function() { return {}; }).then(function(data) {
+                if (data && data.answer) { renderMessage(data.answer, 'bot'); return; }
+                renderMessage("I'm having trouble right now. Please try again, or contact us at info@dtm.io.", 'bot');
+            });
+        }).catch(function() {
+            renderMessage("🔌 I'm having connection issues. Please check your internet and try again.", 'bot');
+        }).finally(function() {
+            isWaiting = false;
+            sendBtn.disabled = false;
+            inputEl.focus();
+        });
+    }
+
+    function toggleWidget() {
+        isOpen = !isOpen;
+        windowEl.style.display = isOpen ? 'flex' : 'none';
+        button.classList.toggle('pulse', !isOpen);
+        if (isOpen) {
+            if (messagesEl.children.length === 0) initWidget();
+            inputEl.focus();
+        }
+    }
+
+    button.addEventListener('click', toggleWidget);
+    closeBtn.addEventListener('click', toggleWidget);
+    sendBtn.addEventListener('click', function() { sendMessage(inputEl.value); });
+    inputEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); sendMessage(inputEl.value); } });
+
+})();
+</script>
+
+</body>
+</html>
