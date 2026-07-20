@@ -6,10 +6,10 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from database import get_db
-from dependencies import require_role
-from models import DOCUMENT_VISIBILITY, Document, USER_ROLES, User
-from schemas import (
+from app.database import get_db
+from app.dependencies import require_role
+from app.models import DOCUMENT_VISIBILITY, Document, USER_ROLES, User
+from app.schemas import (
     DocumentResponse,
     DocumentStatusUpdate,
     SimpleMessageResponse,

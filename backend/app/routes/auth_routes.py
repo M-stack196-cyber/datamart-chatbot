@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from auth_utils import create_access_token, hash_password, verify_password
-from database import get_db
-from models import User
-from schemas import Token, UserCreate, UserResponse
+from app.auth_utils import create_access_token, hash_password, verify_password
+from app.database import get_db
+from app.models import User
+from app.schemas import Token, UserCreate, UserResponse
 
 router = APIRouter()
 
@@ -24,7 +24,6 @@ def signup(user_in: UserCreate, db: Session = Depends(get_db)):
         email=user_in.email,
         hashed_password=hash_password(user_in.password),
         role=user_in.role,
-        department=user_in.department,
         is_active=is_active,
     )
     db.add(user)

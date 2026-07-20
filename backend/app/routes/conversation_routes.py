@@ -3,10 +3,10 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from database import get_db
-from dependencies import get_current_user
-from models import Conversation, Feedback, Message, MESSAGE_ROLES, User
-from schemas import (
+from app.database import get_db
+from app.dependencies import get_current_user
+from app.models import Conversation, Feedback, Message, MESSAGE_ROLES, User
+from app.schemas import (
     ConversationCreateResponse,
     ConversationResponse,
     FeedbackCreate,

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Project Inquiry</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff;">
+        <h1 style="color: #007bff; margin: 0;">📢 New Project Inquiry</h1>
+        <p style="color: #6c757d; margin: 5px 0 0;">A new lead has been captured through the Datamart chatbot</p>
+    </div>
+
+    <div style="background: white; border-radius: 8px; padding: 20px; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="color: #333; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px;">📋 Lead Details</h2>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold; width: 120px;">Name:</td>
+                <td style="padding: 8px 0;">{{ lead.name }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Email:</td>
+                <td style="padding: 8px 0;"><a href="mailto:{{ lead.email }}">{{ lead.email }}</a></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Phone:</td>
+                <td style="padding: 8px 0;"><a href="tel:{{ lead.phone }}">{{ lead.phone }}</a></td>
+            </tr>
+            {% if lead.company %}
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Company:</td>
+                <td style="padding: 8px 0;">{{ lead.company }}</td>
+            </tr>
+            {% endif %}
+            {% if lead.country %}
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Country:</td>
+                <td style="padding: 8px 0;">{{ lead.country }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Project:</td>
+                <td style="padding: 8px 0;">{{ lead.project_title or 'Not specified' }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Budget:</td>
+                <td style="padding: 8px 0;">{{ lead.budget or 'Not decided' }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Timeline:</td>
+                <td style="padding: 8px 0;">{{ lead.timeline or 'Flexible' }}</td>
+            </tr>
+            {% if lead.industry %}
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Industry:</td>
+                <td style="padding: 8px 0;">{{ lead.industry }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Source:</td>
+                <td style="padding: 8px 0;">{{ lead.source }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold;">Received:</td>
+                <td style="padding: 8px 0;">{{ lead.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+        </table>
+
+        <div style="margin-top: 20px; background: #f8f9fa; padding: 15px; border-radius: 4px;">
+            <h3 style="margin-top: 0; color: #333;">📝 Project Description</h3>
+            <p style="white-space: pre-wrap; margin: 0;">{{ lead.project_description }}</p>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="{{ cta_url }}" style="background: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                👁️ View Lead in Admin Panel
+            </a>
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center; color: #6c757d; font-size: 14px;">
+        <p style="margin: 0;">This is an automated notification from Datamart Chatbot</p>
+        <p style="margin: 5px 0 0;">{{ company_name }}</p>
+    </div>
+</body>
+</html>

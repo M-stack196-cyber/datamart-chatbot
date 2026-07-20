@@ -1,54 +1,40 @@
 import io
 import os
 from dotenv import load_dotenv
-
 import docx
 from fastapi import Depends, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
-from database import Base, engine
-from dependencies import require_role
-import admin_routes
-import auth_routes
-import chat_routes
-import conversation_routes
-import models
 
-# Load environment variables
+# Local imports - all from app/
+from app.database import Base, engine
+from app.dependencies import require_role
+from app.routes import auth_routes, chat_routes, admin_routes, conversation_routes
+from app.routes.chat import router as lead_chat_router
+from app.routes.admin.leads import router as admin_leads_router
+import app.models
+
 load_dotenv()
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
-# ============================================================
-# CORS CONFIGURATION - UPDATED FOR VERCEL
-# ============================================================
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "http://localhost:5500",
-        "http://127.0.0.1:5500",
-        "null",
-        "*",
-        # Add your Vercel frontend URL here after deployment
-        "https://datamart-chatbot.vercel.app",
-        "https://datamart-chatbot-1978.vercel.app",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Include routers
 app.include_router(auth_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(conversation_routes.router)
+app.include_router(lead_chat_router, prefix="/api")
+app.include_router(admin_leads_router, prefix="/api")
 
 @app.get("/")
 def root():
