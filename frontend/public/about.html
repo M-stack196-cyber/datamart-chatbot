@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About Us | Datamart Inc - Build. Scale. Transform.</title>
+<style>
+    /* ============================================================
+       DATAMART ABOUT PAGE - Brand Colors: #D61903
+       ============================================================ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: #1a1a1a;
+        background: #f8f9fa;
+        line-height: 1.6;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ---- TOP BAR ---- */
+    .top-bar {
+        background: #1a1a1a; color: #ccc; font-size: 13px; padding: 8px 40px;
+        display: flex; align-items: center; justify-content: center; gap: 24px; position: relative;
+    }
+    .top-bar a { color: #ccc; }
+    .top-bar a:hover { color: #fff; }
+    .top-bar .divider { color: #555; }
+    .top-bar .close-bar {
+        position: absolute; right: 20px; background: none; border: none;
+        color: #999; font-size: 16px; cursor: pointer; line-height: 1;
+    }
+    .top-bar .close-bar:hover { color: #fff; }
+
+    /* ---- HEADER / MEGA NAV ---- */
+    .site-header {
+        background: #fff; border-bottom: 1px solid #e9ecef; padding: 14px 40px;
+        display: flex; align-items: center; justify-content: space-between;
+        position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .site-logo { display: flex; align-items: center; gap: 10px; }
+    .site-logo .logo-mark { width: 34px; height: 34px; flex-shrink: 0; }
+    .site-logo .logo-text { display: flex; flex-direction: column; line-height: 1.1; }
+    .site-logo .logo-text .name { font-size: 19px; font-weight: 800; color: #1a1a1a; }
+    .site-logo .logo-text .name span { color: #D61903; }
+    .site-logo .logo-text .tag { font-size: 10px; letter-spacing: 1px; color: #999; font-weight: 600; }
+
+    .mega-nav { display: flex; gap: 28px; align-items: center; }
+    .mega-nav > .nav-item { position: relative; }
+    .mega-nav > .nav-item > a,
+    .mega-nav > .nav-item > button {
+        display: flex; align-items: center; gap: 4px; background: none; border: none;
+        font: inherit; cursor: pointer; text-decoration: none; color: #3a3a3a;
+        font-size: 14.5px; font-weight: 600; padding: 8px 0; transition: color 0.2s;
+    }
+    .mega-nav > .nav-item.active > a,
+    .mega-nav > .nav-item.active > button { color: #D61903; }
+    .mega-nav > .nav-item > a:hover,
+    .mega-nav > .nav-item > button:hover { color: #D61903; }
+    .mega-nav .caret { font-size: 10px; transition: transform 0.2s; }
+    .mega-nav .nav-item:hover .caret { transform: rotate(180deg); }
+
+    .nav-dropdown {
+        position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+        background: #fff; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.14);
+        padding: 10px; min-width: 220px; display: none; flex-direction: column;
+        gap: 2px; border: 1px solid #eee;
+    }
+    .nav-item:hover .nav-dropdown { display: flex; }
+    .nav-dropdown a { padding: 9px 12px; border-radius: 6px; font-size: 14px; color: #4a4a4a; font-weight: 500; }
+    .nav-dropdown a:hover { background: #fdf1ef; color: #D61903; }
+
+    .header-cta {
+        background: #D61903; color: #fff; padding: 11px 22px; border-radius: 6px;
+        font-weight: 600; font-size: 14.5px; display: flex; align-items: center;
+        gap: 8px; transition: background 0.2s; white-space: nowrap;
+    }
+    .header-cta:hover { background: #b01503; }
+
+    /* ---- HERO ---- */
+    .ab-hero {
+        max-width: 900px; margin: 0 auto; padding: 70px 40px 40px; text-align: center;
+        background: linear-gradient(180deg, #fef4f2 0%, #f8f9fa 100%);
+    }
+    .ab-hero-pill {
+        display: inline-flex; align-items: center; gap: 6px; background: #fde2dd;
+        color: #D61903; font-weight: 700; font-size: 13px; padding: 8px 18px;
+        border-radius: 20px; margin-bottom: 24px;
+    }
+    .ab-hero h1 { font-size: 48px; font-weight: 800; line-height: 1.15; margin-bottom: 20px; }
+    .ab-hero h1 .accent { color: #D61903; display: block; }
+    .ab-hero p { font-size: 17px; color: #6a6a6a; max-width: 640px; margin: 0 auto; }
+
+    /* ---- STATS ---- */
+    .ab-stats {
+        max-width: 1000px; margin: 40px auto 0; padding: 0 40px;
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+    }
+    .ab-stat-card { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 22px 12px; text-align: center; }
+    .ab-stat-card .num { font-size: 30px; font-weight: 800; color: #D61903; }
+    .ab-stat-card .label { font-size: 13px; color: #777; margin-top: 2px; }
+
+    /* ---- STORY ---- */
+    .story-section { max-width: 900px; margin: 70px auto; padding: 0 40px; }
+    .story-section h2 { font-size: 32px; font-weight: 800; margin-bottom: 20px; text-align: center; }
+    .story-section p { font-size: 16px; color: #4a4a4a; margin-bottom: 18px; }
+
+    /* ---- VALUES ---- */
+    .values-section { background: #fff; padding: 70px 40px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
+    .values-inner { max-width: 1100px; margin: 0 auto; }
+    .section-heading { text-align: center; margin-bottom: 48px; }
+    .section-heading h2 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+    .section-heading p { color: #6a6a6a; font-size: 16px; }
+
+    .values-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+    .value-card { text-align: center; padding: 20px; }
+    .value-card .icon {
+        width: 56px; height: 56px; border-radius: 14px; background: #fdf1ef;
+        display: flex; align-items: center; justify-content: center; font-size: 26px;
+        margin: 0 auto 16px;
+    }
+    .value-card h4 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .value-card p { font-size: 13.5px; color: #6a6a6a; }
+
+    /* ---- TEAM ---- */
+    .team-section { max-width: 1100px; margin: 70px auto; padding: 0 40px; text-align: center; }
+    .team-blurb {
+        background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 48px;
+        max-width: 720px; margin: 0 auto;
+    }
+    .team-blurb .icon { font-size: 40px; margin-bottom: 16px; }
+    .team-blurb p { font-size: 16px; color: #4a4a4a; }
+
+    /* ---- CTA BANNER ---- */
+    .cta-banner {
+        max-width: 1100px; margin: 70px auto; padding: 50px 60px; border-radius: 20px;
+        background: linear-gradient(120deg, #D61903 0%, #8f1000 100%); color: #fff;
+        display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+    }
+    .cta-banner h2 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    .cta-banner p { font-size: 14.5px; opacity: 0.9; }
+    .cta-banner .btn-white {
+        background: #fff; color: #D61903; padding: 14px 28px; border-radius: 8px;
+        font-weight: 700; font-size: 15px; white-space: nowrap; transition: opacity 0.2s;
+    }
+    .cta-banner .btn-white:hover { opacity: 0.9; }
+
+    /* ---- FOOTER ---- */
+    .site-footer { background: #101012; color: #999; padding: 56px 40px 30px; }
+    .footer-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr; gap: 30px; }
+    .footer-brand .footer-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .footer-brand .footer-logo .name { font-size: 18px; font-weight: 800; color: #fff; }
+    .footer-brand .footer-logo .name span { color: #D61903; }
+    .footer-brand p { font-size: 13.5px; line-height: 1.7; margin-bottom: 16px; color: #999; }
+    .footer-contact { font-size: 13.5px; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; color: #aaa; }
+    .footer-social { display: flex; gap: 10px; margin-top: 16px; }
+    .footer-social a {
+        width: 32px; height: 32px; border-radius: 50%; background: #222;
+        display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+    .footer-social a:hover { background: #D61903; }
+    .footer-col h4 { font-size: 12.5px; letter-spacing: 0.6px; color: #777; font-weight: 700; margin-bottom: 16px; }
+    .footer-col a { display: block; font-size: 13.5px; color: #bbb; margin-bottom: 12px; }
+    .footer-col a:hover { color: #fff; }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 900px) {
+        .mega-nav { display: none; }
+        .ab-hero h1 { font-size: 34px; }
+        .ab-stats { grid-template-columns: repeat(2, 1fr); }
+        .values-grid { grid-template-columns: 1fr 1fr; }
+        .footer-grid { grid-template-columns: 1fr 1fr; }
+        .top-bar { font-size: 11px; padding: 8px 16px; gap: 12px; }
+        .cta-banner { padding: 36px 28px; text-align: center; justify-content: center; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+TOP BAR
+============================================================ -->
+<div class="top-bar" id="topBar">
+    <span>✉️ hello@dtm.io</span>
+    <span class="divider">|</span>
+    <span>📞 +1 (650) 640-3837</span>
+    <span class="divider">|</span>
+    <span>Palo Alto, CA • 24/7 Support</span>
+    <button class="close-bar" id="closeTopBar" aria-label="Dismiss">✕</button>
+</div>
+
+<!-- ============================================================
+SITE HEADER / MEGA NAV
+============================================================ -->
+<header class="site-header">
+    <a href="dtmindex.html" class="site-logo">
+        <svg class="logo-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 3 L36 34 H4 Z" fill="#D61903"/>
+            <path d="M20 3 L36 34 L20 27 Z" fill="#8f1000"/>
+        </svg>
+        <span class="logo-text">
+            <span class="name">Datamart <span>Inc</span></span>
+            <span class="tag">INC</span>
+        </span>
+    </a>
+
+    <nav class="mega-nav">
+        <div class="nav-item">
+            <a href="dtmindex.html#services">AI Development <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="services.html">AI Development Services</a>
+                <a href="services.html">Agentic AI</a>
+                <a href="services.html">LLM Integration</a>
+                <a href="services.html">RAG Pipelines</a>
+                <a href="services.html">AI Chatbots</a>
+                <a href="services.html">Workflow Automation</a>
+            </div>
+        </div>
+        <div class="nav-item">
+            <a href="#">AI Security <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="#">AI Risk Assessment</a>
+                <a href="#">Model Red-Teaming</a>
+                <a href="#">Compliance Review</a>
+            </div>
+        </div>
+        <div class="nav-item">
+            <a href="services.html">Services <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="services.html">Staff Augmentation</a>
+                <a href="services.html">Dedicated Teams</a>
+                <a href="services.html">MVP Development</a>
+                <a href="services.html">Custom Software</a>
+                <a href="services.html">Web App Development</a>
+                <a href="services.html">Mobile App Development</a>
+            </div>
+        </div>
+        <div class="nav-item">
+            <a href="#">Industries <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="#">Real Estate & PropTech</a>
+                <a href="#">FinTech & Banking</a>
+                <a href="#">Healthcare & MedTech</a>
+                <a href="#">E-commerce & Retail</a>
+            </div>
+        </div>
+        <div class="nav-item">
+            <a href="dtmindex.html#tech-stack">Tech Stack <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="#">MERN Stack</a>
+                <a href="#">Python Development</a>
+                <a href="#">.NET & C#</a>
+                <a href="#">Mobile Development</a>
+            </div>
+        </div>
+        <div class="nav-item active">
+            <a href="case-studies.html">Company <span class="caret">▾</span></a>
+            <div class="nav-dropdown">
+                <a href="about.html">About Us</a>
+                <a href="case-studies.html">Case Studies</a>
+                <a href="#">Clients</a>
+                <a href="#">Careers</a>
+                <a href="#">Blog</a>
+                <a href="contact.html">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <a href="contact.html" class="header-cta">📞 Get a Free Audit</a>
+</header>
+
+<!-- ============================================================
+HERO
+============================================================ -->
+<section class="ab-hero">
+    <span class="ab-hero-pill">🏢 Our Story</span>
+    <h1>Engineering Partners<span class="accent">You Can Rely On</span></h1>
+    <p>Datamart Inc is a US-managed, globally-delivered engineering execution partner. We've spent over a decade helping startups and small businesses build, scale, and transform through software and AI.</p>
+</section>
+
+<!-- ============================================================
+STATS
+============================================================ -->
+<div class="ab-stats">
+    <div class="ab-stat-card"><div class="num">2011</div><div class="label">Founded</div></div>
+    <div class="ab-stat-card"><div class="num">150+</div><div class="label">Projects Delivered</div></div>
+    <div class="ab-stat-card"><div class="num">50+</div><div class="label">Engineers</div></div>
+    <div class="ab-stat-card"><div class="num">99.9%</div><div class="label">Average Uptime</div></div>
+</div>
+
+<!-- ============================================================
+STORY
+============================================================ -->
+<section class="story-section">
+    <h2>Why We Exist</h2>
+    <p>Most engineering teams are stretched thin — too much roadmap, not enough hands. Datamart was founded to close that gap without the overhead of a traditional agency or the risk of an unvetted freelancer.</p>
+    <p>We place senior, pre-vetted engineers directly into your workflow in 1-2 weeks, and back them with a US-managed delivery process so nothing falls through the cracks. Whether it's a single contractor or a full product team, the bar for quality stays the same.</p>
+    <p>Today that means staff augmentation, MVP builds, SaaS maintenance, and increasingly, agentic AI and automation — RAG pipelines, voice agents, and workflow systems that do real work, not just demo well.</p>
+</section>
+
+<!-- ============================================================
+VALUES
+============================================================ -->
+<section class="values-section">
+    <div class="values-inner">
+        <div class="section-heading">
+            <h2>What We Value</h2>
+            <p>The principles behind how we staff, build, and ship</p>
+        </div>
+        <div class="values-grid">
+            <div class="value-card">
+                <div class="icon">🎯</div>
+                <h4>Quality Over Speed</h4>
+                <p>We'd rather ship the right thing a week later than the wrong thing on time.</p>
+            </div>
+            <div class="value-card">
+                <div class="icon">🔍</div>
+                <h4>Radical Transparency</h4>
+                <p>Weekly demos, honest timelines, and no surprises in the invoice.</p>
+            </div>
+            <div class="value-card">
+                <div class="icon">🤝</div>
+                <h4>Real Partnership</h4>
+                <p>We embed in your team and workflow — not a black-box vendor.</p>
+            </div>
+            <div class="value-card">
+                <div class="icon">📈</div>
+                <h4>Built to Scale</h4>
+                <p>Every system we ship is designed for what you'll need next year, too.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+TEAM
+============================================================ -->
+<section class="team-section">
+    <div class="section-heading">
+        <h2>Our Team</h2>
+        <p>Senior engineers, vetted for both skill and communication</p>
+    </div>
+    <div class="team-blurb">
+        <div class="icon">👥</div>
+        <p>Our 50+ engineers span full-stack development, cloud infrastructure, and agentic AI — each placed after a rigorous technical and communication vetting process. Every engagement is backed by a US-based delivery lead who keeps timelines, quality, and communication on track.</p>
+    </div>
+</section>
+
+<!-- ============================================================
+CTA BANNER
+============================================================ -->
+<div class="cta-banner">
+    <div>
+        <h2>Want to work with us?</h2>
+        <p>Tell us what you're building and we'll get back within one business day.</p>
+    </div>
+    <a href="contact.html" class="btn-white">Get in Touch</a>
+</div>
+
+<!-- ============================================================
+FOOTER
+============================================================ -->
+<footer class="site-footer">
+    <div class="footer-grid">
+        <div class="footer-brand">
+            <div class="footer-logo">
+                <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 3 L36 34 H4 Z" fill="#D61903"/>
+                    <path d="M20 3 L36 34 L20 27 Z" fill="#8f1000"/>
+                </svg>
+                <span class="name">Datamart <span>Inc</span></span>
+            </div>
+            <p>Software development for startups and small businesses. Staff augmentation, MVP development, SaaS maintenance, and AI automation. Headquartered in Palo Alto, CA.</p>
+            <div class="footer-contact">📍 3790 El Camino Real #1297, Palo Alto, CA 94306</div>
+            <div class="footer-contact">📞 +1 (650) 640-3837</div>
+            <div class="footer-contact">✉️ hello@dtm.io</div>
+            <div class="footer-social">
+                <a href="#" aria-label="LinkedIn">in</a>
+                <a href="#" aria-label="GitHub">gh</a>
+            </div>
+        </div>
+        <div class="footer-col">
+            <h4>AI DEVELOPMENT</h4>
+            <a href="services.html">AI Development Services</a>
+            <a href="services.html">Agentic AI</a>
+            <a href="services.html">LLM Integration</a>
+            <a href="services.html">RAG Pipelines</a>
+            <a href="services.html">AI Chatbots</a>
+        </div>
+        <div class="footer-col">
+            <h4>SERVICES</h4>
+            <a href="services.html">Staff Augmentation</a>
+            <a href="services.html">MVP Development</a>
+            <a href="services.html">Custom Software</a>
+            <a href="services.html">Web App Development</a>
+            <a href="services.html">Mobile App Development</a>
+        </div>
+        <div class="footer-col">
+            <h4>TECH STACK</h4>
+            <a href="#">MERN Stack</a>
+            <a href="#">Python Development</a>
+            <a href="#">.NET & C#</a>
+            <a href="#">Mobile Development</a>
+        </div>
+        <div class="footer-col">
+            <h4>COMPANY</h4>
+            <a href="about.html">About Us</a>
+            <a href="case-studies.html">Case Studies</a>
+            <a href="#">Careers</a>
+            <a href="contact.html">Contact</a>
+        </div>
+    </div>
+</footer>
+
+<!-- ============================================================
+CHAT WIDGET (same as demo homepage)
+============================================================ -->
+<button class="datamart-widget-button pulse" id="datamartChatButton" aria-label="Open chat" style="position:fixed;bottom:24px;right:24px;width:60px;height:60px;border-radius:50%;background:#D61903;color:#fff;border:none;box-shadow:0 4px 20px rgba(214,25,3,0.4);cursor:pointer;z-index:99999;display:flex;align-items:center;justify-content:center;font-size:28px;">💬</button>
+
+<div class="datamart-widget-window" id="datamartChatWindow" style="position:fixed;bottom:96px;right:24px;width:380px;height:520px;max-height:calc(100vh - 120px);background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.16);display:none;flex-direction:column;z-index:99999;overflow:hidden;">
+    <div style="background:#D61903;color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px;"><span>💬</span> Datamart AI</div>
+        <button id="datamartChatClose" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;opacity:0.8;">✕</button>
+    </div>
+    <div id="datamartMessages" style="flex:1;overflow-y:auto;padding:16px 20px;background:#f7f7f8;"></div>
+    <div style="padding:8px 20px 12px;display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid #eee;background:#fff;">
+        <button class="datamart-widget-suggestion-btn" data-question="What services does Datamart offer?" style="background:#f0f0f0;border:none;padding:6px 14px;border-radius:16px;font-size:12px;color:#333;cursor:pointer;">What services?</button>
+        <button class="datamart-widget-suggestion-btn" data-question="How much does staff augmentation cost?" style="background:#f0f0f0;border:none;padding:6px 14px;border-radius:16px;font-size:12px;color:#333;cursor:pointer;">Pricing</button>
+    </div>
+    <div style="display:flex;gap:8px;padding:12px 20px;border-top:1px solid #eee;background:#fff;">
+        <input type="text" id="datamartChatInput" placeholder="Ask a question..." style="flex:1;border:1px solid #ddd;border-radius:24px;padding:8px 16px;font-size:14px;outline:none;" />
+        <button id="datamartChatSend" aria-label="Send message" style="background:#D61903;color:#fff;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:18px;">➤</button>
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    document.getElementById('closeTopBar').addEventListener('click', function() {
+        document.getElementById('topBar').style.display = 'none';
+    });
+
+    var CONFIG = { API_URL: 'http://localhost:8000/chat-public', WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!" };
+    var button = document.getElementById('datamartChatButton');
+    var windowEl = document.getElementById('datamartChatWindow');
+    var closeBtn = document.getElementById('datamartChatClose');
+    var messagesEl = document.getElementById('datamartMessages');
+    var inputEl = document.getElementById('datamartChatInput');
+    var sendBtn = document.getElementById('datamartChatSend');
+    var isOpen = false, isWaiting = false;
+
+    function getTime() {
+        var now = new Date();
+        return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderMessage(text, sender) {
+        var div = document.createElement('div');
+        var isUser = sender === 'user';
+        div.style.cssText = 'margin-bottom:12px;max-width:85%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.5;word-wrap:break-word;' +
+            (isUser ? 'background:#D61903;color:#fff;margin-left:auto;border-bottom-right-radius:4px;' : 'background:#e9ecef;color:#1a1a1a;margin-right:auto;border-bottom-left-radius:4px;');
+        div.innerHTML = '<div>' + text + '</div><div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:' + (isUser ? 'right' : 'left') + '">' + getTime() + '</div>';
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function initWidget() {
+        messagesEl.innerHTML = '';
+        renderMessage(CONFIG.WELCOME_MESSAGE, 'bot');
+        document.querySelectorAll('.datamart-widget-suggestion-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { sendMessage(this.dataset.question || this.textContent.trim()); });
+        });
+    }
+
+    function sendMessage(question) {
+        if (!question || question.trim() === '' || isWaiting) return;
+        var trimmed = question.trim();
+        renderMessage(trimmed, 'user');
+        inputEl.value = '';
+        isWaiting = true;
+        sendBtn.disabled = true;
+
+        fetch(CONFIG.API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: trimmed })
+        }).then(function(response) {
+            return response.json().catch(function() { return {}; }).then(function(data) {
+                if (data && data.answer) { renderMessage(data.answer, 'bot'); return; }
+                renderMessage("I'm having trouble right now. Please try again, or contact us at info@dtm.io.", 'bot');
+            });
+        }).catch(function() {
+            renderMessage("🔌 I'm having connection issues. Please check your internet and try again.", 'bot');
+        }).finally(function() {
+            isWaiting = false;
+            sendBtn.disabled = false;
+            inputEl.focus();
+        });
+    }
+
+    function toggleWidget() {
+        isOpen = !isOpen;
+        windowEl.style.display = isOpen ? 'flex' : 'none';
+        button.classList.toggle('pulse', !isOpen);
+        if (isOpen) {
+            if (messagesEl.children.length === 0) initWidget();
+            inputEl.focus();
+        }
+    }
+
+    button.addEventListener('click', toggleWidget);
+    closeBtn.addEventListener('click', toggleWidget);
+    sendBtn.addEventListener('click', function() { sendMessage(inputEl.value); });
+    inputEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); sendMessage(inputEl.value); } });
+
+})();
+</script>
+
+</body>
+</html>
