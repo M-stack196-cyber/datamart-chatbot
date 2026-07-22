@@ -808,10 +808,10 @@
             'use strict';
 
             // ============================================================
-            // CONFIGURATION
+            // CONFIGURATION - FIXED URL!
             // ============================================================
             const CONFIG = {
-                API_URL: 'https://datamart-chatbot.vercel.app/api/chat-public',
+                API_URL: 'https://datamart-backend.vercel.app/api/chat-public',
                 WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!",
             };
 
@@ -890,6 +890,9 @@
                         payload.conversation_id = conversationId;
                     }
 
+                    console.log('📤 Sending to:', CONFIG.API_URL);
+                    console.log('📤 Payload:', payload);
+
                     const response = await fetch(CONFIG.API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -902,6 +905,7 @@
                     try {
                         data = await response.json();
                     } catch (e) {
+                        console.error('❌ JSON parse error:', e);
                         renderMessage("I'm still learning and couldn't find the answer to your question. Please try rephrasing.", 'bot');
                         return;
                     }
