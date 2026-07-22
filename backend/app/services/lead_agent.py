@@ -464,44 +464,87 @@ Our CTO/PMO team will review your project and reach out within 24-48 hours.
 Is there anything else I can help you with?"""
     
     def _save_lead(self, conversation_id: UUID):
-        if self.is_internal:
-            request = ProjectRequest(
-                user_id=self.user.id,
-                project_title=self.collected_data.get('project_title', 'Untitled Project'),
-                project_description=self.collected_data.get('project_description', ''),
-                budget=self.collected_data.get('budget'),
-                timeline=self.collected_data.get('timeline'),
-                priority=self.collected_data.get('priority', 'medium'),
-                department=self.collected_data.get('department'),
-                is_urgent=self.collected_data.get('priority', '').lower() == 'high',
-                status='pending'
-            )
-            self.db.add(request)
-            self.db.commit()
-            self.db.refresh(request)
-        else:
-            # Create contact info FIRST (this is the critical fix)
-            lead = ContactInfo(
-                conversation_id=conversation_id,  # This creates the foreign key entry
-                name=self.collected_data.get('name', ''),
-                email=self.collected_data.get('email', ''),
-                phone=self.collected_data.get('phone', ''),
-                project_description=self.collected_data.get('project_description', ''),
-                company=self.collected_data.get('company'),
-                country=self.collected_data.get('country'),
-                project_title=self.collected_data.get('project_title'),
-                industry=self.collected_data.get('industry'),
-                budget=self.collected_data.get('budget', 'Not decided'),
-                timeline=self.collected_data.get('timeline', 'Flexible'),
-                preferred_contact_method=self.collected_data.get('preferred_contact_method')
-            )
-            self.db.add(lead)
-            self.db.commit()
-            self.db.refresh(lead)
-        
-        # Reset the agent state after saving
-        self.lead_started = False
-        self.awaiting_field = None
+        """Save lead - updates existing record instead of inserting duplicate"""
+        try:
+            print(f"📝 Saving lead for conversation: {conversation_id}")
+            
+            if self.is_internal:
+                request = ProjectRequest(
+                    user_id=self.user.id,
+                    project_title=self.collected_data.get('project_title', 'Untitled Project'),
+                    project_description=self.collected_data.get('project_description', ''),
+                    budget=self.collected_data.get('budget'),
+                    timeline=self.collected_data.get('timeline'),
+                    priority=self.collected_data.get('priority', 'medium'),
+                    department=self.collected_data.get('department'),
+                    is_urgent=self.collected_data.get('priority', '').lower() == 'high',
+                    status='pending'
+                )
+                self.db.add(request)
+                self.db.commit()
+                self.db.refresh(request)
+            else:
+                # Check if a ContactInfo record already exists for this conversation
+                existing_lead = self.db.query(ContactInfo).filter_by(
+                    conversation_id=conversation_id
+                ).first()
+                
+                if existing_lead:
+                    # UPDATE existing record (FIX: Don't insert duplicate!)
+                    print(f"🔄 Updating existing lead for conversation: {conversation_id}")
+                    existing_lead.name = self.collected_data.get('name', '')
+                    existing_lead.email = self.collected_data.get('email', '')
+                    existing_lead.phone = self.collected_data.get('phone', '')
+                    existing_lead.project_description = self.collected_data.get('project_description', '')
+                    existing_lead.company = self.collected_data.get('company')
+                    existing_lead.country = self.collected_data.get('country')
+                    existing_lead.project_title = self.collected_data.get('project_title')
+                    existing_lead.industry = self.collected_data.get('industry')
+                    existing_lead.budget = self.collected_data.get('budget', 'Not decided')
+                    existing_lead.timeline = self.collected_data.get('timeline', 'Flexible')
+                    existing_lead.preferred_contact_method = self.collected_data.get('preferred_contact_method')
+                    existing_lead.source = 'public_widget'
+                    existing_lead.status = 'new'
+                    existing_lead.lead_score = 0
+                    
+                    self.db.commit()
+                    self.db.refresh(existing_lead)
+                    print(f"✅ Lead updated successfully with ID: {existing_lead.id}")
+                else:
+                    # INSERT new record (only if it doesn't exist)
+                    print(f"🆕 Creating new lead for conversation: {conversation_id}")
+                    lead = ContactInfo(
+                        conversation_id=conversation_id,
+                        name=self.collected_data.get('name', ''),
+                        email=self.collected_data.get('email', ''),
+                        phone=self.collected_data.get('phone', ''),
+                        project_description=self.collected_data.get('project_description', ''),
+                        company=self.collected_data.get('company'),
+                        country=self.collected_data.get('country'),
+                        project_title=self.collected_data.get('project_title'),
+                        industry=self.collected_data.get('industry'),
+                        budget=self.collected_data.get('budget', 'Not decided'),
+                        timeline=self.collected_data.get('timeline', 'Flexible'),
+                        preferred_contact_method=self.collected_data.get('preferred_contact_method'),
+                        source='public_widget',
+                        status='new',
+                        lead_score=0
+                    )
+                    self.db.add(lead)
+                    self.db.commit()
+                    self.db.refresh(lead)
+                    print(f"✅ Lead saved successfully with ID: {lead.id}")
+            
+            # Reset the agent state after saving
+            self.lead_started = False
+            self.awaiting_field = None
+            
+        except Exception as e:
+            self.db.rollback()
+            print(f"❌ Error saving lead: {e}")
+            import traceback
+            traceback.print_exc()
+            # Don't raise - let the conversation continue
     
     def _save_message(self, conversation_id: UUID, role: str, message: str):
         """Save message - handles missing contact_info gracefully"""
@@ -516,7 +559,6 @@ Is there anything else I can help you with?"""
                 
                 if not contact:
                     # Create a minimal contact record if it doesn't exist
-                    # This is the critical fix for the foreign key error
                     lead = ContactInfo(
                         conversation_id=conversation_id,
                         name="Pending",
@@ -527,6 +569,7 @@ Is there anything else I can help you with?"""
                     self.db.add(lead)
                     self.db.commit()
                     self.db.refresh(lead)
+                    print(f"✅ Created minimal contact for conversation: {conversation_id}")
                 
                 # Now save the message
                 msg = ConversationHistory(
@@ -540,5 +583,5 @@ Is there anything else I can help you with?"""
             except Exception as e:
                 # Rollback and log error
                 self.db.rollback()
-                print(f"Error saving message: {e}")
+                print(f"❌ Error saving message: {e}")
                 # Don't raise - let the conversation continue
