@@ -20,6 +20,7 @@ class LeadCaptureAgent:
         self.optional_attempted = set()
         self.skipped_fields = set()
         self.lead_started = False  # Track if lead capture has started
+        self._temp_messages = []  # Store messages temporarily for internal users
         
         # Required fields (must collect before saving)
         self.REQUIRED_FIELDS = {
@@ -225,6 +226,7 @@ class LeadCaptureAgent:
         return None
     
     def process_message(self, conversation_id: UUID, message: str) -> Tuple[Optional[str], bool]:
+        # Save user message (handles missing contact_info gracefully)
         self._save_message(conversation_id, "user", message)
         
         response = None
@@ -370,8 +372,9 @@ Is there anything else I can help you with?"""
             self.db.commit()
             self.db.refresh(request)
         else:
+            # Create contact info FIRST (this is the critical fix)
             lead = ContactInfo(
-                conversation_id=conversation_id,
+                conversation_id=conversation_id,  # This creates the foreign key entry
                 name=self.collected_data.get('name', ''),
                 email=self.collected_data.get('email', ''),
                 phone=self.collected_data.get('phone', ''),
@@ -393,15 +396,41 @@ Is there anything else I can help you with?"""
         self.awaiting_field = None
     
     def _save_message(self, conversation_id: UUID, role: str, message: str):
+        """Save message - handles missing contact_info gracefully"""
         if self.is_internal:
-            if not hasattr(self, '_temp_messages'):
-                self._temp_messages = []
             self._temp_messages.append({"role": role, "message": message})
         else:
-            msg = ConversationHistory(
-                conversation_id=conversation_id,
-                role=role,
-                message=message
-            )
-            self.db.add(msg)
-            self.db.commit()
+            try:
+                # First check if contact_info exists
+                contact = self.db.query(ContactInfo).filter_by(
+                    conversation_id=conversation_id
+                ).first()
+                
+                if not contact:
+                    # Create a minimal contact record if it doesn't exist
+                    # This is the critical fix for the foreign key error
+                    lead = ContactInfo(
+                        conversation_id=conversation_id,
+                        name="Pending",
+                        email="pending@example.com",
+                        phone="0000000000",
+                        project_description="Project details being collected..."
+                    )
+                    self.db.add(lead)
+                    self.db.commit()
+                    self.db.refresh(lead)
+                
+                # Now save the message
+                msg = ConversationHistory(
+                    conversation_id=conversation_id,
+                    role=role,
+                    message=message
+                )
+                self.db.add(msg)
+                self.db.commit()
+                
+            except Exception as e:
+                # Rollback and log error
+                self.db.rollback()
+                print(f"Error saving message: {e}")
+                # Don't raise - let the conversation continue
