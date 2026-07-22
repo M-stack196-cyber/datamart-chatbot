@@ -7,3 +7,5 @@ __pycache__/
 venv/
 .venv/
 frontend/dist/
+backend/.env.save.1
+.env.save*
