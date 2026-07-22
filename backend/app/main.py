@@ -27,10 +27,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_routes.router)
-app.include_router(chat_routes.router)
-app.include_router(admin_routes.router)
-app.include_router(conversation_routes.router)
+app.include_router(auth_routes.router, prefix="/api")
+app.include_router(chat_routes.router, prefix="/api")
+app.include_router(admin_routes.router, prefix="/api")
+app.include_router(conversation_routes.router, prefix="/api")
 app.include_router(lead_chat_router, prefix="/api")
 app.include_router(admin_leads_router, prefix="/api")
 app.include_router(admin_ui_router)

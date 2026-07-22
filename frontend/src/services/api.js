@@ -57,7 +57,7 @@ export async function loginRequest(email, password) {
   body.append("username", email);
   body.append("password", password);
 
-  const response = await fetch(`${API_BASE_URL}/login`, {
+  const response = await fetch(`${API_BASE_URL}/api/login`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
@@ -72,7 +72,7 @@ export async function loginRequest(email, password) {
 }
 
 export async function signupRequest(payload) {
-  const response = await fetch(`${API_BASE_URL}/signup`, {
+  const response = await fetch(`${API_BASE_URL}/api/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -91,7 +91,7 @@ export async function signupRequest(payload) {
 
 async function chatRequest(question) {
   try {
-    const result = await request("/chat", { method: "POST", body: { question } });
+    const result = await request("/api/chat", { method: "POST", body: { question } });
     return result;
   } catch (error) {
     if (error.message === "UNAUTHORIZED") {
@@ -122,22 +122,22 @@ async function publicChatRequest(message) {
 export const api = {
   chat: chatRequest,
   chatPublic: publicChatRequest,  // NEW: Public chat for widget
-  createConversation: () => request("/conversations", { method: "POST" }),
-  getConversations: () => request("/conversations"),
-  getConversationMessages: (conversationId) => request(`/conversations/${conversationId}/messages`),
+  createConversation: () => request("/api/conversations", { method: "POST" }),
+  getConversations: () => request("/api/conversations"),
+  getConversationMessages: (conversationId) => request(`/api/conversations/${conversationId}/messages`),
   saveMessage: (conversationId, payload) =>
-    request(`/conversations/${conversationId}/messages`, { method: "POST", body: payload }),
+    request(`/api/conversations/${conversationId}/messages`, { method: "POST", body: payload }),
   deleteConversation: (conversationId) =>
-    request(`/conversations/${conversationId}`, { method: "DELETE" }),
-  uploadDocument: (formData) => request("/admin/upload", { method: "POST", body: formData }),
-  listDocuments: () => request("/admin/documents"),
-  deleteDocument: (documentId) => request(`/admin/documents/${documentId}`, { method: "DELETE" }),
-  listUsers: () => request("/admin/users"),
+    request(`/api/conversations/${conversationId}`, { method: "DELETE" }),
+  uploadDocument: (formData) => request("/api/admin/upload", { method: "POST", body: formData }),
+  listDocuments: () => request("/api/admin/documents"),
+  deleteDocument: (documentId) => request(`/api/admin/documents/${documentId}`, { method: "DELETE" }),
+  listUsers: () => request("/api/admin/users"),
   updateUserRole: (userId, role) =>
-    request(`/admin/users/${userId}/role`, { method: "PATCH", body: { role } }),
+    request(`/api/admin/users/${userId}/role`, { method: "PATCH", body: { role } }),
   updateUserStatus: (userId, is_active) =>
-    request(`/admin/users/${userId}/status`, { method: "PATCH", body: { is_active } }),
-  listLeads: () => request("/admin/leads"),
+    request(`/api/admin/users/${userId}/status`, { method: "PATCH", body: { is_active } }),
+  listLeads: () => request("/api/admin/leads"),
   updateLeadStatus: (leadId, status) =>
-    request(`/admin/leads/${leadId}/status?status=${status}`, { method: "PATCH" }),
+    request(`/api/admin/leads/${leadId}/status?status=${status}`, { method: "PATCH" }),
 };
