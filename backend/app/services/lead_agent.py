@@ -19,6 +19,7 @@ class LeadCaptureAgent:
         self.awaiting_field = None
         self.optional_attempted = set()
         self.skipped_fields = set()
+        self.lead_started = False  # Track if lead capture has started
         
         # Required fields (must collect before saving)
         self.REQUIRED_FIELDS = {
@@ -67,24 +68,26 @@ class LeadCaptureAgent:
             "company": {
                 "prompt": "What company do you work for? (Optional)",
                 "follow_up": "Got it!",
-                "parse": lambda x: x.strip(),
+                "parse": lambda x: {"value": x.strip()},
                 "skip_phrases": ["none", "not", "n/a", "no company", "skip"],
                 "default": None
             },
             "project_title": {
                 "prompt": "Would you like to give your project a title? (Optional)",
                 "follow_up": "Nice!",
-                "parse": lambda x: x.strip(),
+                "parse": lambda x: {"value": x.strip()},
                 "skip_phrases": ["no", "skip", "none", "not"],
                 "default": None
             }
         }
     
     def _parse_budget(self, value: str) -> Dict[str, Any]:
+        """Parse budget value and return a dict with 'value' key."""
         value = value.lower().strip()
         skip_phrases = ["not decided", "don't know", "not sure", "no idea", "flexible", "later", "skip"]
+        
         if any(phrase in value for phrase in skip_phrases):
-            return {"value": "Not decided", "parsed": None}
+            return {"value": "Not decided"}
         
         patterns = [
             r'\$?\s*(\d+[.,]?\d*)\s*(k|thousand|million|m|billion|b)?',
@@ -107,18 +110,20 @@ class LeadCaptureAgent:
                 elif unit in ['b', 'billion']:
                     num *= 1000000000
                 
-                return {"value": f"${num:,.0f}", "parsed": num}
+                return {"value": f"${num:,.0f}"}
         
         if len(value) > 2 and not any(p in value for p in skip_phrases):
-            return {"value": value, "parsed": None}
+            return {"value": value}
         
-        return {"value": "Not decided", "parsed": None}
+        return {"value": "Not decided"}
     
     def _parse_timeline(self, value: str) -> Dict[str, Any]:
+        """Parse timeline value and return a dict with 'value' key."""
         value = value.lower().strip()
         flexible_phrases = ["flexible", "not decided", "don't know", "not sure", "no idea", "later", "asap"]
+        
         if any(phrase in value for phrase in flexible_phrases):
-            return {"value": "Flexible", "parsed": None}
+            return {"value": "Flexible"}
         
         patterns = [
             r'(\d+)\s*(?:week|wk)s?',
@@ -132,7 +137,7 @@ class LeadCaptureAgent:
         for pattern in patterns:
             match = re.search(pattern, value, re.IGNORECASE)
             if match:
-                return {"value": value, "parsed": match.group(0)}
+                return {"value": value}
         
         common = {
             'asap': 'Immediate (ASAP)',
@@ -147,12 +152,12 @@ class LeadCaptureAgent:
         
         for key, val in common.items():
             if key in value:
-                return {"value": val, "parsed": key}
+                return {"value": val}
         
         if len(value) > 2:
-            return {"value": value, "parsed": None}
+            return {"value": value}
         
-        return {"value": "Flexible", "parsed": None}
+        return {"value": "Flexible"}
     
     def classify_intent(self, message: str) -> str:
         project_keywords = [
@@ -251,7 +256,7 @@ class LeadCaptureAgent:
                         parser = self.OPTIONAL_FIELDS[field].get("parse")
                         if parser:
                             parsed = parser(value)
-                            self.collected_data[field] = parsed["value"]
+                            self.collected_data[field] = parsed.get("value", value)
                         else:
                             self.collected_data[field] = value
                     else:
@@ -274,11 +279,14 @@ class LeadCaptureAgent:
         else:
             intent = self.classify_intent(message)
             
-            if intent == "project_inquiry":
+            if intent == "project_inquiry" and not self.lead_started:
+                # Start lead capture only if not already started
+                self.lead_started = True
                 self.collected_data = {}
                 self.completed_fields = set()
                 self.optional_attempted = set()
                 self.skipped_fields = set()
+                self.awaiting_field = None
                 
                 if self.is_internal:
                     self.collected_data["name"] = self.user.full_name
@@ -350,7 +358,7 @@ Is there anything else I can help you with?"""
             request = ProjectRequest(
                 user_id=self.user.id,
                 project_title=self.collected_data.get('project_title', 'Untitled Project'),
-                project_description=self.collected_data.get('project_description'),
+                project_description=self.collected_data.get('project_description', ''),
                 budget=self.collected_data.get('budget'),
                 timeline=self.collected_data.get('timeline'),
                 priority=self.collected_data.get('priority', 'medium'),
@@ -364,10 +372,10 @@ Is there anything else I can help you with?"""
         else:
             lead = ContactInfo(
                 conversation_id=conversation_id,
-                name=self.collected_data.get('name'),
-                email=self.collected_data.get('email'),
-                phone=self.collected_data.get('phone'),
-                project_description=self.collected_data.get('project_description'),
+                name=self.collected_data.get('name', ''),
+                email=self.collected_data.get('email', ''),
+                phone=self.collected_data.get('phone', ''),
+                project_description=self.collected_data.get('project_description', ''),
                 company=self.collected_data.get('company'),
                 country=self.collected_data.get('country'),
                 project_title=self.collected_data.get('project_title'),
@@ -379,6 +387,10 @@ Is there anything else I can help you with?"""
             self.db.add(lead)
             self.db.commit()
             self.db.refresh(lead)
+        
+        # Reset the agent state after saving
+        self.lead_started = False
+        self.awaiting_field = None
     
     def _save_message(self, conversation_id: UUID, role: str, message: str):
         if self.is_internal:

@@ -1,3 +1,6 @@
+import os
+import requests
+import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -6,41 +9,48 @@ from app.database import get_db
 from app.services.lead_agent import LeadCaptureAgent
 from app.core.security import get_current_user
 from app.models.user import User
-import uuid
 
 router = APIRouter()
 
-# Request models
 class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
 
-# Active agents cache (use Redis in production)
 active_agents = {}
 
-# Placeholder for RAG service (you already have this)
 async def process_rag_query(message: str, db: Session) -> str:
-    """Placeholder for your existing RAG processing"""
-    # This should call your existing RAG pipeline
-    # For now, return a simple response
-    return f"I understand you're asking about: {message}. Let me check the knowledge base."
+    """Call the n8n chat-query workflow for general questions"""
+    webhook_url = os.getenv("N8N_CHAT_WEBHOOK_URL")
+    
+    if not webhook_url:
+        return "I'm having trouble connecting to my knowledge base right now. Please try again in a moment."
+    
+    try:
+        response = requests.post(
+            webhook_url,
+            json={"question": message},
+            timeout=45
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("answer", "I couldn't find an answer to your question.")
+    except Exception as e:
+        print(f"RAG error: {e}")
+        return "I'm having trouble connecting to my knowledge base right now. Please try again in a moment."
 
 @router.post("/chat-public")
 async def public_chat(
     request: ChatRequest,
     db: Session = Depends(get_db)
 ):
-    """Public widget chat endpoint - Full lead capture"""
     conversation_id = request.conversation_id or str(uuid.uuid4())
     
-    # Get or create agent for this conversation
     if conversation_id not in active_agents:
         active_agents[conversation_id] = LeadCaptureAgent(db, user=None)
     
     agent = active_agents[conversation_id]
     response, lead_complete = agent.process_message(conversation_id, request.message)
     
-    # Fallback to RAG if no response from agent
     if response is None:
         response = await process_rag_query(request.message, db)
     
@@ -56,10 +66,8 @@ async def app_chat(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Internal app chat endpoint - Logged-in users only"""
     conversation_id = request.conversation_id or f"internal_{current_user.id}"
     
-    # Create agent with user context
     key = f"internal_{current_user.id}"
     if key not in active_agents:
         active_agents[key] = LeadCaptureAgent(db, user=current_user)
@@ -67,7 +75,6 @@ async def app_chat(
     agent = active_agents[key]
     response, request_complete = agent.process_message(conversation_id, request.message)
     
-    # Fallback to RAG if no response from agent
     if response is None:
         response = await process_rag_query(request.message, db)
     
@@ -88,7 +95,6 @@ async def get_conversation(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get conversation history for a lead (Admin only)"""
     from app.models.contact_info import ContactInfo
     
     if current_user.role not in ["admin", "cto", "pmo"]:

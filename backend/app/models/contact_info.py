@@ -34,3 +34,11 @@ class ContactInfo(Base):
     
     # Relationships
     messages = relationship("ConversationHistory", back_populates="lead", cascade="all, delete-orphan")
+    
+    def __init__(self, **kwargs):
+        # Handle UUID conversion for SQLite
+        if 'conversation_id' in kwargs:
+            conv_id = kwargs['conversation_id']
+            if isinstance(conv_id, str):
+                kwargs['conversation_id'] = uuid.UUID(conv_id)
+        super().__init__(**kwargs)

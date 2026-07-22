@@ -810,11 +810,10 @@
             // ============================================================
             // CONFIGURATION
             // ============================================================
-            const CONFIG = {
-                API_URL: 'http://localhost:8000/chat-public',
-                WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!",
-            };
-
+          const CONFIG = {
+    API_URL: 'http://localhost:8000/api/chat-public',  // ✅ FIXED: Added /api/
+    WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!",
+};
             // ============================================================
             // DOM Elements
             // ============================================================
@@ -888,7 +887,7 @@
                     const response = await fetch(CONFIG.API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ question: trimmed })
+                        body: JSON.stringify({ message: trimmed })  // ✅ FIXED: Use 'message' not 'question'
                     });
 
                     hideTyping();
@@ -903,9 +902,9 @@
                         return;
                     }
 
-                    // Check if the backend returned a friendly error message
-                    if (data && data.answer) {
-                        renderMessage(data.answer, 'bot');
+                    // Check if the backend returned an answer
+                    if (data && data.response) {
+                        renderMessage(data.response, 'bot');
                         return;
                     }
 
@@ -916,7 +915,7 @@
                     }
 
                     // If we have an answer, display it
-                    const answer = data.answer || data.response || data.message || 'No response received.';
+                    const answer = data.response || data.answer || data.message || 'No response received.';
                     renderMessage(answer, 'bot');
 
                 } catch (error) {

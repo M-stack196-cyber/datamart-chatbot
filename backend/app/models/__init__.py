@@ -5,7 +5,7 @@ from .project_conversation import ProjectConversation
 from .user import User
 
 # Document visibility and user roles
-DOCUMENT_VISIBILITY = ["public", "internal", "private"]
+DOCUMENT_VISIBILITY = ["public", "internal", "private", "external"]
 USER_ROLES = ["admin", "user", "customer", "pmo", "cto"]
 MESSAGE_ROLES = ["user", "assistant", "system"]
 

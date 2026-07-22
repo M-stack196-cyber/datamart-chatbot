@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
+import uuid
 
 class ConversationHistory(Base):
     __tablename__ = "conversation_history"
@@ -14,3 +15,11 @@ class ConversationHistory(Base):
     
     # Relationships
     lead = relationship("ContactInfo", back_populates="messages")
+    
+    def __init__(self, **kwargs):
+        # Handle UUID conversion for SQLite
+        if 'conversation_id' in kwargs:
+            conv_id = kwargs['conversation_id']
+            if isinstance(conv_id, str):
+                kwargs['conversation_id'] = uuid.UUID(conv_id)
+        super().__init__(**kwargs)

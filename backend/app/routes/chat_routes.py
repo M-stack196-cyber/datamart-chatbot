@@ -43,34 +43,3 @@ def chat_proxy(payload: ChatRequest, current_user: User = Depends(get_current_us
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Upstream chat workflow returned invalid JSON",
         ) from exc
-
-
-@router.post("/chat-public")
-def chat_public(payload: ChatRequest):
-    """Public chat endpoint for website widget (no auth required)."""
-    webhook_url = os.getenv("N8N_CHAT_WEBHOOK_URL")
-    if not webhook_url:
-        return {
-            "answer": "I'm having trouble connecting right now. Please try again in a moment. If the issue persists, contact us at info@dtm.io."
-        }
-
-    request_payload = {
-        "question": payload.question,
-        "user_role": "guest",
-        "source": "website_widget"
-    }
-
-    try:
-        response = requests.post(webhook_url, json=request_payload, timeout=45)
-        response.raise_for_status()
-    except requests.RequestException:
-        return {
-            "answer": "I'm having trouble connecting to my knowledge base right now. Please try again in a moment. If the issue persists, feel free to contact us at info@dtm.io."
-        }
-
-    try:
-        return response.json()
-    except ValueError:
-        return {
-            "answer": "I'm still learning and couldn't find the answer to your question. Please try rephrasing, or reach out to our team at info@dtm.io for immediate assistance."
-        }

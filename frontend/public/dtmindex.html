@@ -801,7 +801,7 @@
     </div>
 
     <!-- ============================================================
-    CHAT WIDGET JAVASCRIPT (UPDATED WITH BETTER ERROR HANDLING)
+    CHAT WIDGET JAVASCRIPT (PRODUCTION READY)
     ============================================================ -->
     <script>
         (function() {
@@ -811,7 +811,7 @@
             // CONFIGURATION
             // ============================================================
             const CONFIG = {
-                API_URL: 'http://localhost:8000/chat-public',
+                API_URL: 'https://datamart-chatbot.vercel.app/api/chat-public',
                 WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!",
             };
 
@@ -827,6 +827,7 @@
 
             let isOpen = false;
             let isWaiting = false;
+            let conversationId = null;
 
             // ============================================================
             // Utility: Get current timestamp
@@ -868,7 +869,7 @@
             }
 
             // ============================================================
-            // Send message to backend (UPDATED WITH BETTER ERROR HANDLING)
+            // Send message to backend
             // ============================================================
             async function sendMessage(question) {
                 if (!question || question.trim() === '') return;
@@ -876,7 +877,6 @@
 
                 const trimmed = question.trim();
 
-                // Render user message
                 renderMessage(trimmed, 'user');
                 inputEl.value = '';
                 isWaiting = true;
@@ -885,43 +885,47 @@
                 showTyping();
 
                 try {
+                    const payload = { message: trimmed };
+                    if (conversationId) {
+                        payload.conversation_id = conversationId;
+                    }
+
                     const response = await fetch(CONFIG.API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ question: trimmed })
+                        body: JSON.stringify(payload)
                     });
 
                     hideTyping();
 
-                    // Try to parse the response
                     let data = {};
                     try {
                         data = await response.json();
                     } catch (e) {
-                        // If response is not valid JSON, use a friendly message
-                        renderMessage("I'm still learning and couldn't find the answer to your question. Please try rephrasing, or reach out to our team at info@dtm.io for assistance.", 'bot');
+                        renderMessage("I'm still learning and couldn't find the answer to your question. Please try rephrasing.", 'bot');
                         return;
                     }
 
-                    // Check if the backend returned a friendly error message
-                    if (data && data.answer) {
+                    console.log('📥 Response received:', data);
+
+                    if (data.conversation_id) {
+                        conversationId = data.conversation_id;
+                        console.log('💬 Conversation ID saved:', conversationId);
+                    }
+
+                    if (data && data.response) {
+                        renderMessage(data.response, 'bot');
+                    } else if (data && data.answer) {
                         renderMessage(data.answer, 'bot');
-                        return;
-                    }
-
-                    // If response is not OK but has no answer field
-                    if (!response.ok) {
+                    } else if (!response.ok) {
                         renderMessage("I'm having trouble right now. Please try again in a moment. If the issue persists, contact us at info@dtm.io.", 'bot');
-                        return;
+                    } else {
+                        renderMessage("I couldn't find an answer to your question. Please try rephrasing.", 'bot');
                     }
-
-                    // If we have an answer, display it
-                    const answer = data.answer || data.response || data.message || 'No response received.';
-                    renderMessage(answer, 'bot');
 
                 } catch (error) {
+                    console.error('❌ Fetch error:', error);
                     hideTyping();
-                    // User-friendly error message for connection issues
                     renderMessage("🔌 I'm having connection issues. Please check your internet and try again. If the problem continues, contact us at info@dtm.io.", 'bot');
                 } finally {
                     isWaiting = false;
@@ -937,7 +941,6 @@
                 messagesEl.innerHTML = '';
                 renderMessage(CONFIG.WELCOME_MESSAGE, 'bot');
 
-                // Set up suggested question clicks
                 document.querySelectorAll('.datamart-widget-suggestion-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const q = this.dataset.question || this.textContent.trim();

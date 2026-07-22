@@ -6,12 +6,12 @@ from fastapi import Depends, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-# Local imports - all from app/
 from app.database import Base, engine
 from app.dependencies import require_role
 from app.routes import auth_routes, chat_routes, admin_routes, conversation_routes
 from app.routes.chat import router as lead_chat_router
 from app.routes.admin.leads import router as admin_leads_router
+from app.routes.admin_ui import router as admin_ui_router
 import app.models
 
 load_dotenv()
@@ -19,7 +19,6 @@ load_dotenv()
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,13 +27,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(auth_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(conversation_routes.router)
 app.include_router(lead_chat_router, prefix="/api")
 app.include_router(admin_leads_router, prefix="/api")
+app.include_router(admin_ui_router)
 
 @app.get("/")
 def root():

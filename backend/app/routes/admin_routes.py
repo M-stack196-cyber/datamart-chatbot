@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import require_role
 from app.models import DOCUMENT_VISIBILITY, Document, USER_ROLES, User
+from app.models.contact_info import ContactInfo  # ADD THIS IMPORT
 from app.schemas import (
     DocumentResponse,
     DocumentStatusUpdate,
@@ -210,3 +211,46 @@ def update_user_status(
     db.commit()
     db.refresh(user)
     return user
+
+
+# ============================================================
+# LEADS MANAGEMENT (NEW)
+# ============================================================
+
+@router.get("/leads")
+def list_leads(
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_role("admin")),
+):
+    """Get all leads for the admin panel."""
+    leads = db.query(ContactInfo).order_by(ContactInfo.created_at.desc()).all()
+    return leads
+
+@router.get("/leads/{lead_id}")
+def get_lead(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_role("admin")),
+):
+    """Get a single lead by ID."""
+    lead = db.query(ContactInfo).filter(ContactInfo.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    return lead
+
+@router.patch("/leads/{lead_id}/status")
+def update_lead_status(
+    lead_id: int,
+    status: str,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_role("admin")),
+):
+    """Update lead status."""
+    lead = db.query(ContactInfo).filter(ContactInfo.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    lead.status = status
+    lead.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(lead)
+    return lead

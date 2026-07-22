@@ -34,7 +34,6 @@ async function request(path, { method = "GET", body, headers = {} } = {}) {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      // If the backend returned a friendly error message, use it
       if (data && data.answer) {
         return data;
       }
@@ -43,7 +42,6 @@ async function request(path, { method = "GET", body, headers = {} } = {}) {
 
     return data;
   } catch (error) {
-    // Return a user-friendly error object instead of throwing
     if (error.message === "UNAUTHORIZED") {
       throw error;
     }
@@ -91,9 +89,6 @@ export async function signupRequest(payload) {
   return data;
 }
 
-// ============================================================
-// Updated chat function with better error handling
-// ============================================================
 async function chatRequest(question) {
   try {
     const result = await request("/chat", { method: "POST", body: { question } });
@@ -109,8 +104,24 @@ async function chatRequest(question) {
   }
 }
 
+// ============================================================
+// PUBLIC CHAT (No authentication required)
+// ============================================================
+async function publicChatRequest(message) {
+  try {
+    const result = await request("/api/chat-public", { method: "POST", body: { message } });
+    return result;
+  } catch (error) {
+    return {
+      response: "I'm having trouble connecting right now. Please try again in a moment. If the issue persists, contact us at info@dtm.io.",
+      _isError: true
+    };
+  }
+}
+
 export const api = {
   chat: chatRequest,
+  chatPublic: publicChatRequest,  // NEW: Public chat for widget
   createConversation: () => request("/conversations", { method: "POST" }),
   getConversations: () => request("/conversations"),
   getConversationMessages: (conversationId) => request(`/conversations/${conversationId}/messages`),
@@ -126,4 +137,7 @@ export const api = {
     request(`/admin/users/${userId}/role`, { method: "PATCH", body: { role } }),
   updateUserStatus: (userId, is_active) =>
     request(`/admin/users/${userId}/status`, { method: "PATCH", body: { is_active } }),
+  listLeads: () => request("/admin/leads"),
+  updateLeadStatus: (leadId, status) =>
+    request(`/admin/leads/${leadId}/status?status=${status}`, { method: "PATCH" }),
 };
