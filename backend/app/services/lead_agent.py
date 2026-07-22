@@ -161,17 +161,117 @@ class LeadCaptureAgent:
         return {"value": "Flexible"}
     
     def classify_intent(self, message: str) -> str:
+        """Classify user intent as project inquiry or general inquiry."""
+        message_lower = message.lower()
+        
+        # Check if it's a question about services, pricing, or general info
+        service_keywords = [
+            "services", "offer", "provide", "do you", "can you", 
+            "how much", "cost", "pricing", "price", "budget",
+            "timeline", "timing", "when", "how long",
+            "staff augmentation", "mvp", "saas", "ai", "cloud",
+            "development", "custom software", "maintenance"
+        ]
+        
+        for keyword in service_keywords:
+            if keyword in message_lower:
+                return "project_inquiry"
+        
+        # Check for project-related keywords
         project_keywords = [
             "build", "develop", "create", "make", "project", "app", "website",
             "software", "system", "platform", "solution", "mvp", "product",
             "want to build", "looking for", "need help with", "hire", "developers",
-            "i need", "i want", "can you"
+            "i need", "i want", "help with"
         ]
-        message_lower = message.lower()
+        
         for keyword in project_keywords:
             if keyword in message_lower:
                 return "project_inquiry"
+        
         return "general_inquiry"
+    
+    def get_service_response(self, message: str) -> Optional[str]:
+        """Generate direct response for service-related questions."""
+        message_lower = message.lower()
+        
+        services_info = {
+            "services": """### Datamart Services
+
+Datamart offers the following services:
+
+🤝 **Staff Augmentation**: Pre-vetted senior engineers at 50-70% lower cost. Placed in 1-2 weeks.
+
+🚀 **MVP Development**: Launch your product in 8-12 weeks with our expert team.
+
+⚡ **SaaS Maintenance**: 99.99% uptime guarantee with 24/7 support and monitoring.
+
+🤖 **AI Automation**: Agentic AI, LLMs, and RAG solutions for your business.
+
+💻 **Custom Software**: Full-stack development with React, Node.js, Python, and more.
+
+☁️ **Cloud & DevOps**: AWS, Docker, Kubernetes - scalable and secure infrastructure.
+
+Would you like to learn more about any of these services or start a project request?""",
+            
+            "cost": """### Staff Augmentation Pricing
+
+💰 **Cost Savings**: 50-70% lower cost than US hiring
+
+💵 **No Recruiting Fees**: We don't charge placement fees
+
+📋 **No Benefits Overhead**: You only pay for engineering time
+
+🔄 **Flexible Monthly Contracts**: Scale up or down as needed
+
+For a custom quote, please start a project request and our team will get back to you within 24-48 hours.""",
+            
+            "timeline": """### Engagement Timeline
+
+⏱️ **Time to Hire**: 1-2 weeks to place engineers
+
+🚀 **MVP Launch**: 8-12 weeks from kickoff
+
+📅 **Flexible Contracts**: Month-to-month or project-based
+
+🔧 **24/7 Support**: Available for all active projects
+
+Would you like to discuss your specific timeline requirements?""",
+            
+            "staff augmentation": """### Staff Augmentation
+
+👨‍💻 **Pre-vetted Senior Engineers**: Access to a global talent pool
+
+🌍 **Global Delivery**: US-managed, globally delivered
+
+🔄 **Seamless Integration**: Engineers report to you and use your tools
+
+💸 **50-70% Lower Cost**: Compared to US hiring
+
+📋 **No Recruiting Fees**: Save on placement costs
+
+Would you like to discuss your specific staffing needs?"""
+        }
+        
+        # Check for matching keywords
+        for key, response in services_info.items():
+            if key in message_lower:
+                return response
+        
+        # Check for general "what", "how", "why" questions
+        if message_lower.startswith(("what", "how", "why", "when", "who", "where")):
+            return """### General Information
+
+I'd be happy to help you learn more about Datamart! Here are the key areas I can assist with:
+
+• **Services**: Staff Augmentation, MVP Development, SaaS Maintenance, AI Automation, Custom Software, Cloud & DevOps
+• **Cost**: 50-70% lower cost than US hiring, no recruiting fees
+• **Timeline**: 1-2 weeks to hire, 8-12 weeks for MVP launch
+• **Team**: US-managed, globally delivered
+
+What specific information would you like to know about?"""
+        
+        return None
     
     def extract_field_value(self, field: str, message: str) -> Optional[str]:
         message = message.strip()
@@ -231,6 +331,13 @@ class LeadCaptureAgent:
         
         response = None
         lead_complete = False
+        
+        # Check for direct service response first
+        service_response = self.get_service_response(message)
+        if service_response and not self.lead_started:
+            # Return service info without starting lead capture
+            self._save_message(conversation_id, "assistant", service_response)
+            return service_response, False
         
         if self.awaiting_field:
             field = self.awaiting_field
@@ -306,7 +413,8 @@ class LeadCaptureAgent:
                         field_name, prompt = next_q
                         response = f"Great! I'd love to learn more about your project. {prompt}"
             else:
-                response = None
+                # Fallback for general inquiries
+                response = "I'm here to help! You can ask me about our services, pricing, timeline, or start a project request. What would you like to know?"
         
         if response:
             self._save_message(conversation_id, "assistant", response)

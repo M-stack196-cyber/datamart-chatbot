@@ -9,3 +9,4 @@ venv/
 frontend/dist/
 backend/.env.save.1
 .env.save*
+.vercel
