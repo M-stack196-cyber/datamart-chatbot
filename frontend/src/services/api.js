@@ -1,3 +1,7 @@
+// ============================================================
+// API CONFIGURATION
+// ============================================================
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://datamart-backend.vercel.app";
 
 let getTokenRef = () => null;
@@ -7,6 +11,10 @@ export function configureApiAuth({ getToken, onUnauthorized } = {}) {
   if (getToken !== undefined) getTokenRef = getToken;
   if (onUnauthorized !== undefined) onUnauthorizedRef = onUnauthorized;
 }
+
+// ============================================================
+// BASE REQUEST FUNCTION
+// ============================================================
 
 async function request(path, { method = "GET", body, headers = {} } = {}) {
   const token = getTokenRef();
@@ -24,8 +32,12 @@ async function request(path, { method = "GET", body, headers = {} } = {}) {
     options.body = JSON.stringify(body);
   }
 
+  // Build the full URL
+  const fullUrl = `${API_BASE_URL}${path}`;
+  console.log('🔍 API Request URL:', fullUrl); // Debugging
+
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, options);
+    const response = await fetch(fullUrl, options);
 
     if (response.status === 401) {
       onUnauthorizedRef();
@@ -45,12 +57,17 @@ async function request(path, { method = "GET", body, headers = {} } = {}) {
     if (error.message === "UNAUTHORIZED") {
       throw error;
     }
+    console.error('❌ API Error:', error);
     return {
       answer: "I'm having connection issues. Please check your internet and try again. If the problem persists, contact us at info@dtm.io.",
       _isError: true
     };
   }
 }
+
+// ============================================================
+// AUTHENTICATION ENDPOINTS
+// ============================================================
 
 export async function loginRequest(email, password) {
   const body = new URLSearchParams();
@@ -89,6 +106,10 @@ export async function signupRequest(payload) {
   return data;
 }
 
+// ============================================================
+// CHAT ENDPOINTS
+// ============================================================
+
 async function chatRequest(question) {
   try {
     const result = await request("/api/chat", { method: "POST", body: { question } });
@@ -104,14 +125,13 @@ async function chatRequest(question) {
   }
 }
 
-// ============================================================
 // PUBLIC CHAT (No authentication required)
-// ============================================================
 async function publicChatRequest(message) {
   try {
     const result = await request("/api/chat-public", { method: "POST", body: { message } });
     return result;
   } catch (error) {
+    console.error('❌ Public Chat Error:', error);
     return {
       response: "I'm having trouble connecting right now. Please try again in a moment. If the issue persists, contact us at info@dtm.io.",
       _isError: true
@@ -119,9 +139,16 @@ async function publicChatRequest(message) {
   }
 }
 
+// ============================================================
+// API EXPORTS
+// ============================================================
+
 export const api = {
+  // Chat
   chat: chatRequest,
-  chatPublic: publicChatRequest,  // NEW: Public chat for widget
+  chatPublic: publicChatRequest,
+  
+  // Conversations
   createConversation: () => request("/api/conversations", { method: "POST" }),
   getConversations: () => request("/api/conversations"),
   getConversationMessages: (conversationId) => request(`/api/conversations/${conversationId}/messages`),
@@ -129,6 +156,8 @@ export const api = {
     request(`/api/conversations/${conversationId}/messages`, { method: "POST", body: payload }),
   deleteConversation: (conversationId) =>
     request(`/api/conversations/${conversationId}`, { method: "DELETE" }),
+  
+  // Admin
   uploadDocument: (formData) => request("/api/admin/upload", { method: "POST", body: formData }),
   listDocuments: () => request("/api/admin/documents"),
   deleteDocument: (documentId) => request(`/api/admin/documents/${documentId}`, { method: "DELETE" }),
@@ -137,6 +166,8 @@ export const api = {
     request(`/api/admin/users/${userId}/role`, { method: "PATCH", body: { role } }),
   updateUserStatus: (userId, is_active) =>
     request(`/api/admin/users/${userId}/status`, { method: "PATCH", body: { is_active } }),
+  
+  // Leads
   listLeads: () => request("/api/admin/leads"),
   updateLeadStatus: (leadId, status) =>
     request(`/api/admin/leads/${leadId}/status?status=${status}`, { method: "PATCH" }),
