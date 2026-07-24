@@ -1,10 +1,34 @@
+# backend/app/database.py
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from app.core.config import settings
+import os
+from dotenv import load_dotenv
+from pathlib import Path
 
-# Remove connect_args for PostgreSQL
-engine = create_engine(settings.DATABASE_URL)
+# Load .env.local
+env_path = Path(__file__).parent.parent.parent / ".env.local"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+    print("✅ Loaded .env.local")
+else:
+    load_dotenv()
+    print("⚠️ No .env.local found, trying default")
+
+# Get database URL - try multiple possible variable names
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    DATABASE_URL = os.getenv("POSTGRES_URL")
+
+if not DATABASE_URL:
+    DATABASE_URL = "sqlite:///./app.db"
+    print("⚠️ No DATABASE_URL found, using SQLite")
+else:
+    print("✅ Using PostgreSQL")
+
+# Create engine
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

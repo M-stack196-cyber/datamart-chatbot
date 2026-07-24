@@ -68,13 +68,13 @@ class UserStatusUpdate(BaseModel):
 class ChatRequest(BaseModel):
     question: str
 
-# Conversation schemas
+# Conversation schemas - FIXED: updated_at is now Optional
 class ConversationResponse(BaseModel):
     id: int
     user_id: int
     title: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None  # FIXED: Made optional
 
     class Config:
         from_attributes = True
@@ -84,7 +84,7 @@ class ConversationCreateResponse(BaseModel):
     user_id: int
     title: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None  # FIXED: Made optional
 
     class Config:
         from_attributes = True

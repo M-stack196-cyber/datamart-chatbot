@@ -22,37 +22,14 @@ app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
 # ============================================================
-# CORS Configuration - Allow Frontend to Access Backend
+# CORS Configuration - Allow All Origins for Development
 # ============================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://datamart-chatbot.vercel.app",
-        "https://datamart-chatbot.vercel.app/",
-        "https://datamart-backend.vercel.app",
-        "https://datamart-backend.vercel.app/",
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "https://datamart-chatbot-l978.vercel.app",
-        "https://datamart-chatbot-l978.vercel.app/",
-        "https://datamart-chatbot-l978-7puzleryj-m-stack196-cybers-projects.vercel.app",
-    ],
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=[
-        "Content-Type",
-        "Authorization",
-        "Accept",
-        "Origin",
-        "X-Requested-With",
-        "Access-Control-Request-Method",
-        "Access-Control-Request-Headers",
-    ],
-    expose_headers=[
-        "Content-Type",
-        "Authorization",
-    ],
-    max_age=600,  # Cache preflight requests for 10 minutes
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ============================================================
@@ -78,12 +55,7 @@ def health_check():
     return {
         "status": "healthy",
         "cors_enabled": True,
-        "allowed_origins": [
-            "https://datamart-chatbot.vercel.app",
-            "https://datamart-backend.vercel.app",
-            "http://localhost:3000",
-            "http://localhost:8000"
-        ]
+        "allowed_origins": ["*"]
     }
 
 @app.get("/test-db")
@@ -102,22 +74,6 @@ async def extract_docx(file: UploadFile = File(...)):
     doc = docx.Document(io.BytesIO(contents))
     text_content = "\n".join(para.text for para in doc.paragraphs)
     return {"text": text_content}
-
-# ============================================================
-# OPTIONS Endpoint for CORS Preflight (Fallback)
-# ============================================================
-from fastapi import Response
-
-@app.options("/{path:path}")
-async def options_handler():
-    """Handle OPTIONS requests for CORS preflight"""
-    response = Response()
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, Origin, X-Requested-With"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Max-Age"] = "600"
-    return response
 
 if __name__ == "__main__":
     import uvicorn
