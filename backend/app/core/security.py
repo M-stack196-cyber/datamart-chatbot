@@ -1,3 +1,7 @@
+# ⚠️ DEPRECATED — DO NOT IMPORT FROM THIS FILE.
+# This get_current_user is a hardcoded mock (always returns a fake admin user)
+# and is no longer used anywhere in the app. Use app.dependencies.get_current_user instead.
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional

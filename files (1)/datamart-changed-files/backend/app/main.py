@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from app.database import Base, engine
 from app.dependencies import require_role
-from app.routes import auth_routes, admin_routes, conversation_routes
+from app.routes import auth_routes, chat_routes, admin_routes, conversation_routes
 from app.routes.chat import router as lead_chat_router
 from app.routes.admin.leads import router as admin_leads_router
 from app.routes.admin.handoff import router as admin_handoff_router
@@ -37,6 +37,7 @@ app.add_middleware(
 # Include All Routes
 # ============================================================
 app.include_router(auth_routes.router, prefix="/api")
+app.include_router(chat_routes.router, prefix="/api")
 app.include_router(admin_routes.router, prefix="/api")
 app.include_router(conversation_routes.router, prefix="/api")
 app.include_router(lead_chat_router, prefix="/api")

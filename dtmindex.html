@@ -628,8 +628,8 @@
             <span>Datamart</span> Inc
         </a>
         <nav class="site-nav">
-            <a href="#">Services</a>
-            <a href="#">Case Studies</a>
+            <a href="#services">Services</a>
+            <a href="case-studies.html">Case Studies</a>
             <a href="#">About</a>
             <a href="#" class="cta-button">Contact</a>
         </nav>
@@ -686,7 +686,7 @@
     <!-- ============================================================
     SERVICES SECTION
     ============================================================ -->
-    <section class="services">
+    <section class="services" id="services">
         <h2>Our Services</h2>
         <p class="subtitle">What we do to help you build, scale, and transform</p>
         <div class="services-grid">
@@ -726,7 +726,7 @@
     <!-- ============================================================
     TECH STACK
     ============================================================ -->
-    <section class="tech-stack">
+    <section class="tech-stack" id="tech-stack">
         <div class="tech-stack-inner">
             <h2>Technology Stack</h2>
             <p class="subtitle">Our expertise, your competitive edge</p>
@@ -801,19 +801,20 @@
     </div>
 
     <!-- ============================================================
-    CHAT WIDGET JAVASCRIPT (UPDATED WITH BETTER ERROR HANDLING)
+    CHAT WIDGET JAVASCRIPT (PRODUCTION READY)
     ============================================================ -->
     <script>
         (function() {
             'use strict';
 
             // ============================================================
-            // CONFIGURATION
+            // CONFIGURATION - FIXED URL!
             // ============================================================
-          const CONFIG = {
-    API_URL: 'http://localhost:8000/api/chat-public',  // ✅ FIXED: Added /api/
-    WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!",
-};
+            const CONFIG = {
+                API_URL: 'http://localhost:8000/api/chat-public',
+                WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!",
+            };
+
             // ============================================================
             // DOM Elements
             // ============================================================
@@ -826,6 +827,71 @@
 
             let isOpen = false;
             let isWaiting = false;
+            let conversationId = null;
+
+            // ---- Live handoff state ----
+            let currentMode = 'bot'; // "bot" | "pending_human" | "human" | "closed"
+            let lastMessageId = 0;
+            let pollTimer = null;
+
+            function statusUrl(id) {
+                return CONFIG.API_URL.replace('/chat-public', `/chat-public/${id}/status`);
+            }
+            function messagesUrl(id) {
+                return CONFIG.API_URL.replace('/chat-public', `/chat-public/${id}/messages`);
+            }
+
+            async function primeLastMessageId() {
+                if (!conversationId) return;
+                try {
+                    const res = await fetch(`${messagesUrl(conversationId)}?after_id=0`);
+                    const data = await res.json();
+                    (data.messages || []).forEach((m) => {
+                        lastMessageId = Math.max(lastMessageId, m.id);
+                    });
+                } catch (e) {
+                    // ignore - polling will still work, just might duplicate the first batch
+                }
+            }
+
+            async function startPolling() {
+                if (pollTimer) return; // already polling
+                await primeLastMessageId();
+                pollTimer = setInterval(async () => {
+                    if (!conversationId) return;
+                    try {
+                        const res = await fetch(`${messagesUrl(conversationId)}?after_id=${lastMessageId}`);
+                        const data = await res.json();
+                        (data.messages || []).forEach((m) => {
+                            if (m.role === 'agent' || m.role === 'assistant') {
+                                renderMessage(m.message, 'bot');
+                            }
+                            lastMessageId = Math.max(lastMessageId, m.id);
+                        });
+
+                        const statusRes = await fetch(statusUrl(conversationId));
+                        const statusData = await statusRes.json();
+                        if (statusData.mode && statusData.mode !== currentMode) {
+                            currentMode = statusData.mode;
+                            if (currentMode === 'human' && statusData.agent_name) {
+                                renderMessage(`${statusData.agent_name} has joined the chat.`, 'bot');
+                            }
+                            if (currentMode === 'closed' || currentMode === 'bot') {
+                                stopPolling();
+                            }
+                        }
+                    } catch (e) {
+                        // silent fail on a single poll - next interval will retry
+                    }
+                }, 3000);
+            }
+
+            function stopPolling() {
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+            }
 
             // ============================================================
             // Utility: Get current timestamp
@@ -867,7 +933,7 @@
             }
 
             // ============================================================
-            // Send message to backend (UPDATED WITH BETTER ERROR HANDLING)
+            // Send message to backend
             // ============================================================
             async function sendMessage(question) {
                 if (!question || question.trim() === '') return;
@@ -875,7 +941,6 @@
 
                 const trimmed = question.trim();
 
-                // Render user message
                 renderMessage(trimmed, 'user');
                 inputEl.value = '';
                 isWaiting = true;
@@ -884,43 +949,66 @@
                 showTyping();
 
                 try {
+                    const payload = { message: trimmed };
+                    if (conversationId) {
+                        payload.conversation_id = conversationId;
+                    }
+
+                    console.log('📤 Sending to:', CONFIG.API_URL);
+                    console.log('📤 Payload:', payload);
+
                     const response = await fetch(CONFIG.API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: trimmed })  // ✅ FIXED: Use 'message' not 'question'
+                        body: JSON.stringify(payload)
                     });
 
                     hideTyping();
 
-                    // Try to parse the response
                     let data = {};
                     try {
                         data = await response.json();
                     } catch (e) {
-                        // If response is not valid JSON, use a friendly message
-                        renderMessage("I'm still learning and couldn't find the answer to your question. Please try rephrasing, or reach out to our team at info@dtm.io for assistance.", 'bot');
+                        console.error('❌ JSON parse error:', e);
+                        renderMessage("I'm still learning and couldn't find the answer to your question. Please try rephrasing.", 'bot');
                         return;
                     }
 
-                    // Check if the backend returned an answer
+                    console.log('📥 Response received:', data);
+
+                    if (data.conversation_id) {
+                        conversationId = data.conversation_id;
+                        console.log('💬 Conversation ID saved:', conversationId);
+                    }
+
+                    if (data.mode) {
+                        currentMode = data.mode;
+                        if (currentMode === 'pending_human' || currentMode === 'human') {
+                            startPolling();
+                        } else {
+                            stopPolling();
+                        }
+                    }
+
+                    const isHandoffMode = currentMode === 'pending_human' || currentMode === 'human';
                     if (data && data.response) {
                         renderMessage(data.response, 'bot');
-                        return;
-                    }
-
-                    // If response is not OK but has no answer field
-                    if (!response.ok) {
+                    } else if (data && data.answer) {
+                        renderMessage(data.answer, 'bot');
+                    } else if (isHandoffMode) {
+                        // A staff member is handling this conversation (or it is
+                        // pending) - the bot intentionally has nothing to say.
+                        // Do not render any fallback text here; the polling loop
+                        // will display the human agent's reply when it arrives.
+                    } else if (!response.ok) {
                         renderMessage("I'm having trouble right now. Please try again in a moment. If the issue persists, contact us at info@dtm.io.", 'bot');
-                        return;
+                    } else {
+                        renderMessage("I couldn't find an answer to your question. Please try rephrasing.", 'bot');
                     }
-
-                    // If we have an answer, display it
-                    const answer = data.response || data.answer || data.message || 'No response received.';
-                    renderMessage(answer, 'bot');
 
                 } catch (error) {
+                    console.error('❌ Fetch error:', error);
                     hideTyping();
-                    // User-friendly error message for connection issues
                     renderMessage("🔌 I'm having connection issues. Please check your internet and try again. If the problem continues, contact us at info@dtm.io.", 'bot');
                 } finally {
                     isWaiting = false;
@@ -936,7 +1024,6 @@
                 messagesEl.innerHTML = '';
                 renderMessage(CONFIG.WELCOME_MESSAGE, 'bot');
 
-                // Set up suggested question clicks
                 document.querySelectorAll('.datamart-widget-suggestion-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const q = this.dataset.question || this.textContent.trim();

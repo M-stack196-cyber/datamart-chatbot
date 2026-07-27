@@ -265,4 +265,27 @@ def update_lead_status(
     lead.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(lead)
-    return lead
+    return leadm-tayyab-aslam@m-tayyab-aslam-ThinkPad-T440:~/datamart-chatbot/backend$ cd ~/datamart-chatbot
+source venv/bin/activate
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+INFO:     Will watch for changes in these directories: ['/home/m-tayyab-aslam/datamart-chatbot/backend']
+ERROR:    [Errno 98] Address already in use
+(venv) m-tayyab-aslam@m-tayyab-aslam-ThinkPad-T440:~/datamart-chatbot/backend$ lsof -i :8000
+COMMAND   PID           USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+uvicorn 92692 m-tayyab-aslam    3u  IPv4 716251      0t0  TCP *:8000 (LISTEN)
+python3 92729 m-tayyab-aslam    3u  IPv4 716251      0t0  TCP *:8000 (LISTEN)
+(venv) m-tayyab-aslam@m-tayyab-aslam-ThinkPad-T440:~/datamart-chatbot/backend$ kill -9 92692 92729
+sleep 2
+lsof -i :8000
+(venv) m-tayyab-aslam@m-tayyab-aslam-ThinkPad-T440:~/datamart-chatbot/backend$ cd ~/datamart-chatbot/backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+INFO:     Will watch for changes in these directories: ['/home/m-tayyab-aslam/datamart-chatbot/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [93076] using StatReload
+✅ Loaded .env.local
+✅ Using PostgreSQL
+INFO:     Started server process [93078]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+

@@ -19,19 +19,11 @@ from .conversation_state import ConversationState
 
 # Document visibility and user roles
 DOCUMENT_VISIBILITY: List[str] = ["public", "internal", "private", "external"]
-USER_ROLES: List[str] = ["admin", "user", "customer", "pmo", "cto", "hr", "ceo"]
+USER_ROLES: List[str] = ["admin", "user", "customer", "pmo", "cto", "hr"]
 
 # Roles that count as "staff" for the live handoff feature -
 # i.e. these are the people who can go online/offline and take live chats.
-STAFF_ROLES: List[str] = ["admin", "cto", "pmo", "hr", "ceo"]
-
-# Roles allowed to manage the team itself - change someone's role,
-# deactivate/reactivate an account, or otherwise remove someone from
-# the team. Deliberately a smaller set than STAFF_ROLES: a CTO or PMO
-# can view leads and take live chats, but shouldn't be able to remove
-# the CEO or another teammate from the system.
-MANAGE_ROLES: List[str] = ["admin", "ceo"]
-
+STAFF_ROLES: List[str] = ["admin", "cto", "pmo", "hr"]
 MESSAGE_ROLES: List[str] = ["user", "assistant", "system", "agent"]
 
 
@@ -172,6 +164,5 @@ __all__ = [
     "DOCUMENT_VISIBILITY",
     "USER_ROLES",
     "STAFF_ROLES",
-    "MANAGE_ROLES",
     "MESSAGE_ROLES"
 ]

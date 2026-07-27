@@ -335,3 +335,115 @@ td {
     align-items: flex-start;
   }
 }
+/* ============================================================
+   Tabs
+   ============================================================ */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tab {
+  border: 1px solid #d8e4f1;
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: #435870;
+}
+
+.tab.active {
+  background: #1059b0;
+  color: #fff;
+  border-color: #1059b0;
+}
+
+/* ============================================================
+   Online/offline status
+   ============================================================ */
+.status-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid #d8e4f1;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.status-toggle.online {
+  border-color: #8ed1a2;
+  color: #0f6c2d;
+}
+
+.status-toggle.offline {
+  border-color: #d8b3b3;
+  color: #7a2c2c;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #b8c4d2;
+}
+
+.status-dot.online {
+  background: #23a55a;
+}
+
+.status-dot.offline {
+  background: #c0392b;
+}
+
+/* ============================================================
+   Live Chats tab
+   ============================================================ */
+.team-status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.team-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.active-chat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.active-pill {
+  background: #1059b0 !important;
+  color: #fff !important;
+}
+
+.handoff-chat-window {
+  border: 1px solid #d8e4f1;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-height: 480px;
+}
+
+.handoff-chat-window .message-list {
+  max-height: 320px;
+}
+
+.button.small,
+.button.secondary.small {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+}

@@ -29,6 +29,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
 
+    # A deactivated account must lose access immediately, not just on next
+    # login - otherwise a still-valid token keeps working after a CEO/admin
+    # deactivates someone, which defeats the point of "remove from team".
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This account has been deactivated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return user
 
 

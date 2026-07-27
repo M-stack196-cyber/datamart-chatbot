@@ -5,18 +5,28 @@ from alembic import context
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# Add the backend directory to Python path
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend'))
 
+# Import your models
 from app.database import Base
 from app.models import *
 
+# this is the Alembic Config object
 config = context.config
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
 
+# Interpret the config file for Python logging
+# This line sets up loggers basically.
+if config.config_file_name is not None:
+    try:
+        fileConfig(config.config_file_name)
+    except Exception:
+        pass
+
+# add your model's MetaData object here
 target_metadata = Base.metadata
 
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -28,9 +38,9 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
-def run_migrations_online():
+def run_migrations_online() -> None:
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
+        config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

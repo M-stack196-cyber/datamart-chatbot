@@ -10,7 +10,7 @@ from app.models.user import User
 from app.models import STAFF_ROLES
 from app.schemas.lead import LeadUpdate
 from app.schemas.project_request import ProjectRequestUpdate
-from app.dependencies import get_current_user
+from app.core.security import get_current_user
 import csv
 from io import StringIO
 from fastapi.responses import StreamingResponse

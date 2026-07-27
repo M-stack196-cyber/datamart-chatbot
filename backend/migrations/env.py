@@ -4,8 +4,12 @@ from sqlalchemy import pool
 from alembic import context
 import sys
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env.local")
 
 from app.database import Base
 from app.models import *
@@ -13,6 +17,10 @@ from app.models import *
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+database_url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+if database_url:
+    config.set_main_option("sqlalchemy.url", database_url)
 
 target_metadata = Base.metadata
 

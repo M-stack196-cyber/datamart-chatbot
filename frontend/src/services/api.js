@@ -111,9 +111,12 @@ export async function signupRequest(payload) {
 // CHAT ENDPOINTS
 // ============================================================
 
-async function chatRequest(question) {
+async function chatRequest(message, conversationId) {
   try {
-    const result = await request("/api/chat", { method: "POST", body: { question } });
+    const result = await request("/api/chat", {
+      method: "POST",
+      body: { message, conversation_id: conversationId },
+    });
     return result;
   } catch (error) {
     if (error.message === "UNAUTHORIZED") {
@@ -127,9 +130,12 @@ async function chatRequest(question) {
 }
 
 // PUBLIC CHAT (No authentication required)
-async function publicChatRequest(message) {
+async function publicChatRequest(message, conversationId) {
   try {
-    const result = await request("/api/chat-public", { method: "POST", body: { message } });
+    const result = await request("/api/chat-public", {
+      method: "POST",
+      body: { message, conversation_id: conversationId },
+    });
     return result;
   } catch (error) {
     console.error('❌ Public Chat Error:', error);
@@ -148,7 +154,7 @@ export const api = {
   // Chat
   chat: chatRequest,
   chatPublic: publicChatRequest,
-  
+
   // Conversations
   createConversation: () => request("/api/conversations", { method: "POST" }),
   getConversations: () => request("/api/conversations"),
@@ -157,7 +163,7 @@ export const api = {
     request(`/api/conversations/${conversationId}/messages`, { method: "POST", body: payload }),
   deleteConversation: (conversationId) =>
     request(`/api/conversations/${conversationId}`, { method: "DELETE" }),
-  
+
   // Admin
   uploadDocument: (formData) => request("/api/admin/upload", { method: "POST", body: formData }),
   listDocuments: () => request("/api/admin/documents"),
@@ -167,9 +173,26 @@ export const api = {
     request(`/api/admin/users/${userId}/role`, { method: "PATCH", body: { role } }),
   updateUserStatus: (userId, is_active) =>
     request(`/api/admin/users/${userId}/status`, { method: "PATCH", body: { is_active } }),
-  
+
   // Leads
   listLeads: () => request("/api/admin/leads"),
   updateLeadStatus: (leadId, status) =>
     request(`/api/admin/leads/${leadId}/status?status=${status}`, { method: "PATCH" }),
+
+  // Live handoff - staff presence
+  setMyOnlineStatus: (is_online) =>
+    request("/api/admin/me/online", { method: "PATCH", body: { is_online } }),
+  listOnlineStaff: () => request("/api/admin/online-staff"),
+
+  // Live handoff - queue and active chats
+  getHandoffQueue: () => request("/api/admin/handoff/queue"),
+  getMyActiveHandoffs: () => request("/api/admin/handoff/active"),
+  claimHandoff: (conversationId) =>
+    request(`/api/admin/handoff/${conversationId}/claim`, { method: "POST" }),
+  getHandoffMessages: (conversationId) =>
+    request(`/api/admin/handoff/${conversationId}/messages`),
+  sendHandoffMessage: (conversationId, message) =>
+    request(`/api/admin/handoff/${conversationId}/message`, { method: "POST", body: { message } }),
+  endHandoff: (conversationId) =>
+    request(`/api/admin/handoff/${conversationId}/end`, { method: "POST" }),
 };
