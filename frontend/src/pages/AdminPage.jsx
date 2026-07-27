@@ -269,6 +269,9 @@ export default function AdminPage() {
     }
   }
 
+  // ------------------------------------------------------------------
+  // Leads
+  // ------------------------------------------------------------------
   async function onUpdateLeadStatus(leadId, status) {
     try {
       await api.updateLeadStatus(leadId, status);
@@ -276,6 +279,34 @@ export default function AdminPage() {
       await loadData();
     } catch (requestError) {
       setError(requestError.message || "Status update failed");
+    }
+  }
+
+  // Delete a lead
+  async function onDeleteLead(leadId, leadName) {
+    const confirmed = window.confirm(`Are you sure you want to delete lead "${leadName}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await api.deleteLead(leadId);
+      setToast(`Lead "${leadName}" deleted successfully`);
+      await loadData();
+    } catch (requestError) {
+      setError(requestError.message || "Failed to delete lead");
+    }
+  }
+
+  // Delete a user
+  async function onDeleteUser(userId, userName) {
+    const confirmed = window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await api.deleteUser(userId);
+      setToast(`User "${userName}" deleted successfully`);
+      await loadData();
+    } catch (requestError) {
+      setError(requestError.message || "Failed to delete user");
     }
   }
 
@@ -463,9 +494,14 @@ export default function AdminPage() {
                       <td>{formatDateTime(targetUser.created_at)}</td>
                       <td>
                         {isManager && !isSelf ? (
-                          <button type="button" className="button secondary" onClick={() => onToggleStatus(targetUser)}>
-                            {targetUser.is_active ? "Deactivate" : "Reactivate"}
-                          </button>
+                          <>
+                            <button type="button" className="button secondary small" onClick={() => onToggleStatus(targetUser)}>
+                              {targetUser.is_active ? "Deactivate" : "Reactivate"}
+                            </button>
+                            <button type="button" className="danger-link small" onClick={() => onDeleteUser(targetUser.id, targetUser.email)}>
+                              Delete
+                            </button>
+                          </>
                         ) : (
                           <span className="sidebar-note">{isSelf ? "—" : "Managed by admin/CEO"}</span>
                         )}
@@ -529,6 +565,15 @@ export default function AdminPage() {
                       >
                         View
                       </button>
+                      {isManager && (
+                        <button
+                          type="button"
+                          className="danger-link small"
+                          onClick={() => onDeleteLead(lead.id, lead.name)}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

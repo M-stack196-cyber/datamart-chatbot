@@ -178,6 +178,10 @@ export const api = {
   listLeads: () => request("/api/admin/leads"),
   updateLeadStatus: (leadId, status) =>
     request(`/api/admin/leads/${leadId}/status?status=${status}`, { method: "PATCH" }),
+  
+  // Delete endpoints
+  deleteLead: (leadId) => request(`/api/admin/leads/${leadId}`, { method: "DELETE" }),
+  deleteUser: (userId) => request(`/api/admin/users/${userId}`, { method: "DELETE" }),
 
   // Live handoff - staff presence
   setMyOnlineStatus: (is_online) =>
