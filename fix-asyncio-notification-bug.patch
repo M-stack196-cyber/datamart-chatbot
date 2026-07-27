@@ -1,0 +1,78 @@
+diff --git a/backend/app/services/handoff.py b/backend/app/services/handoff.py
+index 0e35fff..c1b60f5 100644
+--- a/backend/app/services/handoff.py
++++ b/backend/app/services/handoff.py
+@@ -5,7 +5,6 @@ by email that a visitor wants to talk to a real person.
+ This is intentionally decoupled from lead_agent.py so it can be reused from
+ admin routes too (e.g. a "re-notify" button).
+ """
+-import asyncio
+ from typing import List
+ from uuid import UUID
+ 
+@@ -38,9 +37,7 @@ def notify_available_agents(db: Session, conversation_id: UUID) -> List[User]:
+ 
+     try:
+         from app.services.notification import NotificationService
+-        asyncio.run(
+-            NotificationService.send_handoff_notification(conversation_id, agents)
+-        )
++        NotificationService.send_handoff_notification(conversation_id, agents)
+     except Exception as e:
+         # Don't let an email failure block the handoff flow - the conversation
+         # is still marked pending_human and will show up in the admin queue.
+diff --git a/backend/app/services/lead_agent.py b/backend/app/services/lead_agent.py
+index 83c687c..a3596b2 100644
+--- a/backend/app/services/lead_agent.py
++++ b/backend/app/services/lead_agent.py
+@@ -680,8 +680,7 @@ Is there anything else I can help you with?"""
+                 # Notify CTO/PMO/HR team by email that a new lead came in
+                 try:
+                     from app.services.notification import NotificationService
+-                    import asyncio
+-                    asyncio.run(NotificationService.send_lead_notification(lead_for_notification))
++                    NotificationService.send_lead_notification(lead_for_notification)
+                 except Exception as notify_err:
+                     print(f"⚠️ Lead saved but notification failed: {notify_err}")
+ 
+diff --git a/backend/app/services/notification.py b/backend/app/services/notification.py
+index e33bcaf..7ae45d8 100644
+--- a/backend/app/services/notification.py
++++ b/backend/app/services/notification.py
+@@ -12,14 +12,14 @@ class NotificationService:
+     """Handles email and Slack notifications for new leads and live handoff requests"""
+     
+     @staticmethod
+-    async def send_lead_notification(lead: ContactInfo):
++    def send_lead_notification(lead: ContactInfo):
+         """Send notification for new lead"""
+-        await NotificationService._send_email_notification(lead)
++        NotificationService._send_email_notification(lead)
+         if settings.SLACK_WEBHOOK_URL:
+-            await NotificationService._send_slack_notification(lead)
++            NotificationService._send_slack_notification(lead)
+ 
+     @staticmethod
+-    async def send_handoff_notification(conversation_id, agents: List):
++    def send_handoff_notification(conversation_id, agents: List):
+         """Email every online staff member that a visitor wants to talk live.
+         `agents` is a list of User objects (already filtered to online staff)."""
+         claim_url = f"{settings.APP_URL}/admin/handoff/{conversation_id}"
+@@ -62,7 +62,7 @@ class NotificationService:
+                 print(f"❌ Failed to send handoff notification to {getattr(agent, 'email', '?')}: {e}")
+     
+     @staticmethod
+-    async def _send_email_notification(lead: ContactInfo):
++    def _send_email_notification(lead: ContactInfo):
+         """Send email notification to CTO/PMO team"""
+         try:
+             env = Environment(loader=FileSystemLoader('templates/email'))
+@@ -89,7 +89,7 @@ class NotificationService:
+             print(f"❌ Failed to send email notification: {e}")
+     
+     @staticmethod
+-    async def _send_slack_notification(lead: ContactInfo):
++    def _send_slack_notification(lead: ContactInfo):
+         """Send Slack notification for new lead"""
+         try:
+             message = {
