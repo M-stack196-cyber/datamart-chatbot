@@ -128,14 +128,21 @@ def claim_handoff(
     state.claimed_at = datetime.now(timezone.utc)
     db.commit()
 
-    # Let the visitor know a human has joined
-    joined_msg = ConversationHistory(
-        conversation_id=conversation_id,
-        role="agent",
-        message=f"{current_user.display_name} from Datamart has joined the chat. How can I help?",
-    )
-    db.add(joined_msg)
-    db.commit()
+    # Let the visitor know a human has joined (only if not already sent)
+    existing_join = db.query(ConversationHistory).filter(
+        ConversationHistory.conversation_id == conversation_id,
+        ConversationHistory.role == "agent",
+        ConversationHistory.message.like("%has joined the chat%")
+    ).first()
+
+    if not existing_join:
+        joined_msg = ConversationHistory(
+            conversation_id=conversation_id,
+            role="agent",
+            message=f"{current_user.display_name} from Datamart has joined the chat. How can I help?",
+        )
+        db.add(joined_msg)
+        db.commit()
 
     return {"conversation_id": conversation_id, "mode": state.mode, "assigned_to": current_user.display_name}
 
