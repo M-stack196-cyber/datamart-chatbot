@@ -12,14 +12,14 @@ class NotificationService:
     """Handles email and Slack notifications for new leads and live handoff requests"""
     
     @staticmethod
-    async def send_lead_notification(lead: ContactInfo):
+    def send_lead_notification(lead: ContactInfo):
         """Send notification for new lead"""
-        await NotificationService._send_email_notification(lead)
+        NotificationService._send_email_notification(lead)
         if settings.SLACK_WEBHOOK_URL:
-            await NotificationService._send_slack_notification(lead)
+            NotificationService._send_slack_notification(lead)
 
     @staticmethod
-    async def send_handoff_notification(conversation_id, agents: List):
+    def send_handoff_notification(conversation_id, agents: List):
         """Email every online staff member that a visitor wants to talk live.
         `agents` is a list of User objects (already filtered to online staff)."""
         claim_url = f"{settings.APP_URL}/admin/handoff/{conversation_id}"
@@ -62,7 +62,7 @@ class NotificationService:
                 print(f"❌ Failed to send handoff notification to {getattr(agent, 'email', '?')}: {e}")
     
     @staticmethod
-    async def _send_email_notification(lead: ContactInfo):
+    def _send_email_notification(lead: ContactInfo):
         """Send email notification to CTO/PMO team"""
         try:
             env = Environment(loader=FileSystemLoader('templates/email'))
@@ -89,7 +89,7 @@ class NotificationService:
             print(f"❌ Failed to send email notification: {e}")
     
     @staticmethod
-    async def _send_slack_notification(lead: ContactInfo):
+    def _send_slack_notification(lead: ContactInfo):
         """Send Slack notification for new lead"""
         try:
             message = {

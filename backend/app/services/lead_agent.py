@@ -680,8 +680,7 @@ Is there anything else I can help you with?"""
                 # Notify CTO/PMO/HR team by email that a new lead came in
                 try:
                     from app.services.notification import NotificationService
-                    import asyncio
-                    asyncio.run(NotificationService.send_lead_notification(lead_for_notification))
+                    NotificationService.send_lead_notification(lead_for_notification)
                 except Exception as notify_err:
                     print(f"⚠️ Lead saved but notification failed: {notify_err}")
 

@@ -5,7 +5,6 @@ by email that a visitor wants to talk to a real person.
 This is intentionally decoupled from lead_agent.py so it can be reused from
 admin routes too (e.g. a "re-notify" button).
 """
-import asyncio
 from typing import List
 from uuid import UUID
 
@@ -38,9 +37,7 @@ def notify_available_agents(db: Session, conversation_id: UUID) -> List[User]:
 
     try:
         from app.services.notification import NotificationService
-        asyncio.run(
-            NotificationService.send_handoff_notification(conversation_id, agents)
-        )
+        NotificationService.send_handoff_notification(conversation_id, agents)
     except Exception as e:
         # Don't let an email failure block the handoff flow - the conversation
         # is still marked pending_human and will show up in the admin queue.
