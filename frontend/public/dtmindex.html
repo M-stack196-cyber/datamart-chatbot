@@ -458,7 +458,16 @@
             border-bottom-left-radius: 4px;
         }
 
-        /* System messages (like "has joined") */
+        /* Real human teammate replies (post-handoff) - visually distinct
+           from the bot so visitors can tell a person has joined */
+        .datamart-widget-message.agent {
+            background: #1a1a1a;
+            color: #fff;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+
+        /* System notices, e.g. "X has joined the chat" / "chat has ended" */
         .datamart-widget-message.system {
             background: #f0f0f0;
             color: #666;
@@ -815,14 +824,14 @@
     </div>
 
     <!-- ============================================================
-    CHAT WIDGET JAVASCRIPT (PRODUCTION READY - DUPLICATE FIX)
+    CHAT WIDGET JAVASCRIPT (PRODUCTION READY)
     ============================================================ -->
     <script>
         (function() {
             'use strict';
 
             // ============================================================
-            // CONFIGURATION
+            // CONFIGURATION - FIXED URL!
             // ============================================================
             const CONFIG = {
                 API_URL: 'http://localhost:8000/api/chat-public',
@@ -842,10 +851,106 @@
             let isOpen = false;
             let isWaiting = false;
             let conversationId = null;
-            let lastMessageId = 0;
 
-            // Track displayed message IDs to prevent duplicates
-            let displayedMessageIds = new Set();
+            // ---- Live handoff state ----
+            let currentMode = 'bot'; // "bot" | "pending_human" | "human" | "closed"
+            let lastMessageId = 0;
+            let pollTimer = null;
+
+            function statusUrl(id) {
+                return CONFIG.API_URL.replace('/chat-public', `/chat-public/${id}/status`);
+            }
+            function messagesUrl(id) {
+                return CONFIG.API_URL.replace('/chat-public', `/chat-public/${id}/messages`);
+            }
+
+            async function primeLastMessageId() {
+                if (!conversationId) return;
+                try {
+                    const res = await fetch(`${messagesUrl(conversationId)}?after_id=0`);
+                    const data = await res.json();
+                    (data.messages || []).forEach((m) => {
+                        lastMessageId = Math.max(lastMessageId, m.id);
+                    });
+                } catch (e) {
+                    // ignore - polling will still work, just might duplicate the first batch
+                }
+            }
+
+            let pollStarting = false;
+            let pollInFlight = false;
+
+            async function pollOnce() {
+                if (!conversationId || pollInFlight) return;
+                pollInFlight = true;
+                try {
+                    const res = await fetch(`${messagesUrl(conversationId)}?after_id=${lastMessageId}`);
+                    const data = await res.json();
+                    (data.messages || []).forEach((m) => {
+                        // Extra safety net: skip anything we've already
+                        // passed, even if two polls somehow overlapped.
+                        if (m.id <= lastMessageId) return;
+
+                        if (m.role === 'agent') {
+                            renderMessage(m.message, 'agent', m.created_at);
+                        } else if (m.role === 'system') {
+                            renderMessage(m.message, 'system', m.created_at);
+                        } else if (m.role === 'assistant') {
+                            renderMessage(m.message, 'bot', m.created_at);
+                        }
+                        lastMessageId = Math.max(lastMessageId, m.id);
+                    });
+
+                    const statusRes = await fetch(statusUrl(conversationId));
+                    const statusData = await statusRes.json();
+                    if (statusData.mode && statusData.mode !== currentMode) {
+                        currentMode = statusData.mode;
+                        // No synthetic "has joined" message here anymore -
+                        // the real system message from the backend
+                        // (rendered above) already covers this. Showing
+                        // both used to produce two slightly different
+                        // "joined the chat" lines back-to-back.
+                        if (currentMode === 'closed' || currentMode === 'bot') {
+                            stopPolling();
+                        }
+                    }
+                } catch (e) {
+                    // silent fail on a single poll - next interval will retry
+                } finally {
+                    pollInFlight = false;
+                }
+            }
+
+            async function startPolling() {
+                // FIX: the old guard only checked `pollTimer`, which isn't
+                // set until AFTER the `await primeLastMessageId()` below.
+                // If startPolling() got called twice before the first call
+                // finished priming (e.g. two messages sent close together
+                // while mode was pending_human/human), BOTH calls would
+                // pass the guard and each spin up their own setInterval -
+                // two or three intervals all polling the same conversation
+                // and each rendering the same incoming message. This
+                // `pollStarting` flag is set synchronously, before any
+                // `await`, so a second call is blocked immediately instead
+                // of racing past the guard.
+                if (pollTimer || pollStarting) return;
+                pollStarting = true;
+                try {
+                    await primeLastMessageId();
+                    if (!pollTimer) {
+                        pollTimer = setInterval(pollOnce, 3000);
+                    }
+                } finally {
+                    pollStarting = false;
+                }
+            }
+
+            function stopPolling() {
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+            }
 
             // ============================================================
             // Utility: Get current timestamp
@@ -858,25 +963,15 @@
             // ============================================================
             // Render messages
             // ============================================================
-            function renderMessage(text, sender, timestamp, messageId) {
-                // Skip if this message ID was already displayed
-                if (messageId && displayedMessageIds.has(messageId)) {
-                    console.log('⏭️ Skipping duplicate message ID:', messageId);
-                    return;
-                }
-
+            function renderMessage(text, sender, timestamp) {
                 const div = document.createElement('div');
-                // Use 'system' class for system messages
-                const senderClass = sender === 'system' ? 'system' : sender;
-                div.className = 'datamart-widget-message ' + senderClass;
-                div.innerHTML = '<div>' + text + '</div><div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:' + (sender === 'user' ? 'right' : 'left') + '">' + (timestamp || getTime()) + '</div>';
+                div.className = `datamart-widget-message ${sender}`;
+                div.innerHTML = `
+                    <div>${text}</div>
+                    <div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:${sender === 'user' ? 'right' : 'left'}">${timestamp || getTime()}</div>
+                `;
                 messagesEl.appendChild(div);
                 messagesEl.scrollTop = messagesEl.scrollHeight;
-
-                // Track this message ID
-                if (messageId) {
-                    displayedMessageIds.add(messageId);
-                }
             }
 
             // ============================================================
@@ -897,72 +992,13 @@
             }
 
             // ============================================================
-            // Poll for new messages (for handoff mode)
-            // ============================================================
-            let pollInterval = null;
-
-            async function pollMessages() {
-                if (!conversationId) return;
-
-                try {
-                    var url = CONFIG.API_URL.replace('/chat-public', '/chat-public/' + conversationId + '/messages?after_id=' + lastMessageId);
-                    console.log('📡 Polling:', url);
-
-                    var response = await fetch(url);
-                    if (!response.ok) return;
-
-                    var data = await response.json();
-                    if (!data.messages || data.messages.length === 0) return;
-
-                    for (var i = 0; i < data.messages.length; i++) {
-                        var msg = data.messages[i];
-                        // Skip if already displayed
-                        if (displayedMessageIds.has(msg.id)) {
-                            continue;
-                        }
-
-                        // Determine sender
-                        var sender = 'bot';
-                        if (msg.role === 'user') sender = 'user';
-                        else if (msg.role === 'system') sender = 'system';
-                        else if (msg.role === 'agent') sender = 'bot';
-
-                        renderMessage(msg.message, sender, msg.created_at, msg.id);
-
-                        if (msg.id > lastMessageId) {
-                            lastMessageId = msg.id;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Polling error:', error);
-                }
-            }
-
-            // ============================================================
-            // Start/Stop polling
-            // ============================================================
-            function startPolling() {
-                if (pollInterval) return;
-                console.log('🔄 Starting message polling...');
-                pollInterval = setInterval(pollMessages, 5000);
-            }
-
-            function stopPolling() {
-                if (pollInterval) {
-                    clearInterval(pollInterval);
-                    pollInterval = null;
-                    console.log('⏹️ Stopped message polling');
-                }
-            }
-
-            // ============================================================
             // Send message to backend
             // ============================================================
             async function sendMessage(question) {
                 if (!question || question.trim() === '') return;
                 if (isWaiting) return;
 
-                var trimmed = question.trim();
+                const trimmed = question.trim();
 
                 renderMessage(trimmed, 'user');
                 inputEl.value = '';
@@ -972,7 +1008,7 @@
                 showTyping();
 
                 try {
-                    var payload = { message: trimmed };
+                    const payload = { message: trimmed };
                     if (conversationId) {
                         payload.conversation_id = conversationId;
                     }
@@ -980,7 +1016,7 @@
                     console.log('📤 Sending to:', CONFIG.API_URL);
                     console.log('📤 Payload:', payload);
 
-                    var response = await fetch(CONFIG.API_URL, {
+                    const response = await fetch(CONFIG.API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -988,7 +1024,7 @@
 
                     hideTyping();
 
-                    var data = {};
+                    let data = {};
                     try {
                         data = await response.json();
                     } catch (e) {
@@ -1004,27 +1040,27 @@
                         console.log('💬 Conversation ID saved:', conversationId);
                     }
 
-                    // If mode is human or pending_human, start polling
-                    if (data.mode === 'human' || data.mode === 'pending_human') {
-                        console.log('👤 Human mode detected, starting polling...');
-                        startPolling();
+                    if (data.mode) {
+                        currentMode = data.mode;
+                        if (currentMode === 'pending_human' || currentMode === 'human') {
+                            startPolling();
+                        } else {
+                            stopPolling();
+                        }
                     }
 
-                    // Only render bot response if it exists and mode is not human
-                    if (data.response && data.mode !== 'human') {
-                        // Don't render system messages through this path
-                        if (data.response.indexOf('has joined the chat') === -1) {
-                            renderMessage(data.response, 'bot');
-                        }
-                    } else if (data.answer && data.mode !== 'human') {
+                    if (data.mode === 'human') {
+                        // A teammate has already taken this conversation over.
+                        // Stay silent here - their reply arrives through the
+                        // polling loop, not through this response.
+                    } else if (data && data.response) {
+                        renderMessage(data.response, 'bot');
+                    } else if (data && data.answer) {
                         renderMessage(data.answer, 'bot');
                     } else if (!response.ok) {
                         renderMessage("I'm having trouble right now. Please try again in a moment. If the issue persists, contact us at info@dtm.io.", 'bot');
-                    }
-
-                    // If mode is human, poll immediately to get the join message
-                    if (data.mode === 'human') {
-                        setTimeout(pollMessages, 500);
+                    } else if (data.mode === 'bot' || !data.mode) {
+                        renderMessage("I couldn't find an answer to your question. Please try rephrasing.", 'bot');
                     }
 
                 } catch (error) {
@@ -1043,18 +1079,14 @@
             // ============================================================
             function initWidget() {
                 messagesEl.innerHTML = '';
-                displayedMessageIds.clear();
-                lastMessageId = 0;
-                stopPolling();
                 renderMessage(CONFIG.WELCOME_MESSAGE, 'bot');
 
-                var suggestionBtns = document.querySelectorAll('.datamart-widget-suggestion-btn');
-                for (var i = 0; i < suggestionBtns.length; i++) {
-                    suggestionBtns[i].addEventListener('click', function() {
-                        var q = this.dataset.question || this.textContent.trim();
+                document.querySelectorAll('.datamart-widget-suggestion-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const q = this.dataset.question || this.textContent.trim();
                         sendMessage(q);
                     });
-                }
+                });
             }
 
             // ============================================================
@@ -1062,13 +1094,8 @@
             // ============================================================
             function toggleWidget() {
                 isOpen = !isOpen;
-                if (isOpen) {
-                    windowEl.classList.add('open');
-                    button.classList.remove('pulse');
-                } else {
-                    windowEl.classList.remove('open');
-                    button.classList.add('pulse');
-                }
+                windowEl.classList.toggle('open', isOpen);
+                button.classList.toggle('pulse', !isOpen);
 
                 if (isOpen) {
                     if (messagesEl.children.length === 0) {
