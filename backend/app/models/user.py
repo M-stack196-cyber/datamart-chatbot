@@ -1,16 +1,17 @@
 from typing import Optional, List, TYPE_CHECKING
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Index
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Index, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.database import Base
 
 # Use TYPE_CHECKING to avoid circular imports at runtime
 if TYPE_CHECKING:
-    from . import Document, Conversation, ProjectRequest
+    from . import Document, ProjectRequest
     from .contact_info import ContactInfo
     from .conversation_history import ConversationHistory
     from .project_conversation import ProjectConversation
+    from .conversation import ChatConversation
 
 
 class User(Base):
@@ -22,7 +23,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     
     # User information
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=False, nullable=False)
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     last_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
@@ -39,17 +40,15 @@ class User(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[DateTime]] = mapped_column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
     
-    # Relationships
-    # From existing models - FIXED: Added foreign_keys
+    # Relationships - using string references to avoid circular imports
     project_requests: Mapped[List["ProjectRequest"]] = relationship(
         "ProjectRequest", 
-        foreign_keys="ProjectRequest.user_id",  # ADDED THIS LINE
+        foreign_keys="ProjectRequest.user_id",
         back_populates="user", 
         cascade="all, delete-orphan",
         lazy="dynamic"
     )
     
-    # From __init__.py models
     documents: Mapped[List["Document"]] = relationship(
         "Document", 
         back_populates="uploader",
@@ -57,17 +56,16 @@ class User(Base):
         cascade="all, delete-orphan"
     )
     
-    conversations: Mapped[List["Conversation"]] = relationship(
-        "Conversation", 
+    conversations: Mapped[List["ChatConversation"]] = relationship(
+        "ChatConversation", 
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="dynamic"
     )
     
-    # Additional relationships if you have them
     contact_infos: Mapped[List["ContactInfo"]] = relationship(
         "ContactInfo",
-        foreign_keys="ContactInfo.assigned_to",  # ADDED THIS
+        foreign_keys="ContactInfo.assigned_to",
         back_populates="user",
         cascade="all, delete-orphan"
     )
@@ -93,36 +91,29 @@ class User(Base):
     )
     
     def __repr__(self) -> str:
-        """String representation of the User."""
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
     
     def __str__(self) -> str:
-        """Human-readable string representation."""
         return f"{self.full_name} ({self.email})"
     
     @property
     def is_admin(self) -> bool:
-        """Check if user has admin role."""
         return self.role == "admin"
     
     @property
     def is_customer(self) -> bool:
-        """Check if user has customer role."""
         return self.role == "customer"
     
     @property
     def is_pmo(self) -> bool:
-        """Check if user has PMO role."""
         return self.role == "pmo"
     
     @property
     def is_cto(self) -> bool:
-        """Check if user has CTO role."""
         return self.role == "cto"
     
     @property
     def display_name(self) -> str:
-        """Get the best display name for the user."""
         if self.first_name and self.last_name:
             return f"{self.first_name} {self.last_name}"
         elif self.first_name:
@@ -132,22 +123,15 @@ class User(Base):
     
     @property
     def full_name_display(self) -> str:
-        """Alias for display_name for better readability."""
         return self.display_name
     
     def has_role(self, role: str) -> bool:
-        """Check if user has a specific role."""
         return self.role == role
     
     def has_any_role(self, roles: List[str]) -> bool:
-        """Check if user has any of the specified roles."""
         return self.role in roles
     
     @classmethod
     def get_valid_roles(cls) -> List[str]:
-        """Get list of valid user roles."""
         from . import USER_ROLES
         return USER_ROLES
-
-
-# No need to import at the bottom - use TYPE_CHECKING instead

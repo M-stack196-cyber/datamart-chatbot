@@ -1,17 +1,11 @@
-import os
-import requests
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 from pydantic import BaseModel
+from datetime import datetime
 from app.database import get_db
-from app.services.lead_agent import LeadCaptureAgent
-from app.dependencies import get_current_user
-from app.models.user import User
-from app.models.conversation_state import ConversationState
-from app.models.conversation_history import ConversationHistory
-from app.models import STAFF_ROLES
+from app.models import ChatConversation, ChatMessage
 
 router = APIRouter()
 
@@ -19,139 +13,140 @@ class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
 
-async def process_rag_query(message: str, db: Session) -> str:
-    """Call the n8n chat-query workflow for general questions"""
-    webhook_url = os.getenv("N8N_CHAT_WEBHOOK_URL")
-
-    if not webhook_url:
-        return "I'm having trouble connecting to my knowledge base right now. Please try again in a moment."
-
-    try:
-        response = requests.post(
-            webhook_url,
-            json={"question": message},
-            timeout=45
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("answer", "I couldn't find an answer to your question.")
-    except Exception as e:
-        print(f"RAG error: {e}")
-        return "I'm having trouble connecting to my knowledge base right now. Please try again in a moment."
-
+def get_ai_response(message: str) -> str:
+    msg_lower = message.lower()
+    if "services" in msg_lower:
+        return "We offer Staff Augmentation, MVP Development, SaaS Maintenance, AI Automation, Custom Software, and Cloud & DevOps services."
+    elif "cost" in msg_lower or "price" in msg_lower:
+        return "Our pricing is 50-70% lower than US hiring with no recruiting fees. Contact us for a custom quote."
+    elif "timeline" in msg_lower:
+        return "We can start projects in 1-2 weeks for staff augmentation, and 8-12 weeks for MVP development."
+    else:
+        return "I'd be happy to help! We provide technology solutions including AI automation, custom software development, and cloud infrastructure. What specific service are you interested in?"
 
 @router.post("/chat-public")
-async def public_chat(
-    request: ChatRequest,
-    db: Session = Depends(get_db)
-):
-    conversation_id = request.conversation_id or str(uuid.uuid4())
-
-    # NOTE: state is no longer kept in an in-memory dict. The backend runs on
-    # serverless functions, so a fresh LeadCaptureAgent is created on every
-    # request and reloads its progress from the conversation_state table
-    # (see LeadCaptureAgent._load_state). This is what fixes the bug where
-    # the bot used to "forget" the conversation after the first reply.
-    agent = LeadCaptureAgent(db, user=None)
-    response, lead_complete = agent.process_message(conversation_id, request.message)
-
-    # agent.mode reflects the conversation state AFTER this message was
-    # processed - it may have just flipped to "pending_human" if the user
-    # asked to talk to someone.
-    if response is None and agent.mode == "bot":
-        response = await process_rag_query(request.message, db)
-
-    return {
-        "response": response,
-        "conversation_id": conversation_id,
-        "lead_complete": lead_complete,
-        "mode": agent.mode,  # "bot" | "pending_human" | "human" | "closed"
-    }
-
-
-@router.get("/chat-public/{conversation_id}/status")
-async def public_chat_status(conversation_id: str, db: Session = Depends(get_db)):
-    """Lets the widget poll whether it's still waiting for a human, or has
-    been connected, without sending a new chat message."""
-    state = db.query(ConversationState).filter_by(conversation_id=conversation_id).first()
-    if not state:
-        return {"mode": "bot", "agent_name": None}
-
-    agent_name = None
-    if state.mode == "human" and state.agent:
-        agent_name = state.agent.display_name
-
-    return {"mode": state.mode, "agent_name": agent_name}
-
-
-@router.get("/chat-public/{conversation_id}/messages")
-async def public_chat_messages(
-    conversation_id: str,
-    after_id: int = 0,
-    db: Session = Depends(get_db)
-):
-    """Polling endpoint for the widget while mode is pending_human/human -
-    returns any new messages (including the staff member's replies) since
-    `after_id`. The frontend should poll this every few seconds once the
-    /chat-public response comes back with mode != "bot"."""
-    messages = (
-        db.query(ConversationHistory)
-        .filter(
-            ConversationHistory.conversation_id == conversation_id,
-            ConversationHistory.id > after_id,
+async def public_chat(request: ChatRequest, db: Session = Depends(get_db)):
+    try:
+        conversation_id = request.conversation_id or str(uuid.uuid4())[:8]
+        
+        conv = db.query(ChatConversation).filter(
+            ChatConversation.conversation_id == conversation_id
+        ).first()
+        
+        if not conv:
+            conv = ChatConversation(
+                conversation_id=conversation_id,
+                status="active"
+            )
+            db.add(conv)
+            db.commit()
+            db.refresh(conv)
+        
+        response = get_ai_response(request.message)
+        
+        user_msg = ChatMessage(
+            conversation_id=conv.id,
+            role="user",
+            message=request.message,
+            timestamp=datetime.utcnow()
         )
-        .order_by(ConversationHistory.id.asc())
-        .all()
-    )
+        db.add(user_msg)
+        
+        bot_msg = ChatMessage(
+            conversation_id=conv.id,
+            role="bot",
+            message=response,
+            timestamp=datetime.utcnow()
+        )
+        db.add(bot_msg)
+        db.commit()
+        
+        return {
+            "response": response,
+            "conversation_id": conversation_id,
+            "mode": "bot",
+            "lead_complete": False
+        }
+    except Exception as e:
+        print(f"Error in chat endpoint: {e}")
+        return {"error": str(e)}
+
+@router.get("/chat-public/{conversation_id}/history")
+async def get_chat_history(conversation_id: str, db: Session = Depends(get_db)):
+    conv = db.query(ChatConversation).filter(
+        ChatConversation.conversation_id == conversation_id
+    ).first()
+    
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    messages = db.query(ChatMessage).filter(
+        ChatMessage.conversation_id == conv.id
+    ).order_by(ChatMessage.timestamp).all()
+    
     return {
+        "conversation_id": conversation_id,
+        "status": conv.status,
         "messages": [
-            {"id": m.id, "role": m.role, "message": m.message, "created_at": m.created_at}
-            for m in messages
+            {
+                "id": msg.id,
+                "role": msg.role,
+                "message": msg.message,
+                "timestamp": msg.timestamp.isoformat()
+            }
+            for msg in messages
         ]
     }
 
-
-@router.post("/chat")
-async def app_chat(
-    request: ChatRequest,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    conversation_id = request.conversation_id or f"internal_{current_user.id}"
-
-    agent = LeadCaptureAgent(db, user=current_user)
-    response, request_complete = agent.process_message(conversation_id, request.message)
-
-    if response is None:
-        response = await process_rag_query(request.message, db)
-
-    return {
-        "response": response,
-        "conversation_id": conversation_id,
-        "request_complete": request_complete,
-        "user": {
-            "name": current_user.full_name,
-            "email": current_user.email,
-            "role": getattr(current_user, 'role', 'user')
+@router.post("/chat-public/{conversation_id}/end")
+async def end_conversation(conversation_id: str, db: Session = Depends(get_db)):
+    """End a conversation and trigger email notifications"""
+    
+    conv = db.query(ChatConversation).filter(
+        ChatConversation.conversation_id == conversation_id
+    ).first()
+    
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Mark as ended
+    conv.status = "ended"
+    conv.ended_at = datetime.utcnow()
+    db.commit()
+    
+    # Import services
+    try:
+        from app.services.summary_service import generate_chat_summary
+        from app.services.pdf_service import generate_chat_pdf
+        from app.services.email_service import send_chat_completion_emails
+    except ImportError as e:
+        print(f"⚠️ Service import error: {e}")
+        return {
+            "status": "ended",
+            "message": "Chat ended, but services not available.",
+            "conversation_id": conversation_id
         }
-    }
-
-@router.get("/chat/conversation/{conversation_id}")
-async def get_conversation(
-    conversation_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    from app.models.contact_info import ContactInfo
-
-    if current_user.role not in STAFF_ROLES:
-        raise HTTPException(403, "Insufficient permissions")
-
-    lead = db.query(ContactInfo).filter(ContactInfo.conversation_id == conversation_id).first()
-    if not lead:
-        raise HTTPException(404, "Conversation not found")
-
+    
+    # Generate summary
+    summary = generate_chat_summary(conv.id, db)
+    
+    # Generate PDF
+    pdf_content = generate_chat_pdf(conversation_id, db)
+    
+    if not pdf_content:
+        return {
+            "status": "error",
+            "message": "Failed to generate PDF",
+            "conversation_id": conversation_id
+        }
+    
+    # Send emails
+    visitor_email = conv.visitor_email or ""
+    send_chat_completion_emails(conversation_id, pdf_content, summary, visitor_email)
+    
     return {
-        "lead": lead,
-        "messages": lead.messages
+        "status": "ended",
+        "message": "Chat ended and emails sent",
+        "conversation_id": conversation_id,
+        "summary": summary
     }
