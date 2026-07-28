@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -129,20 +129,24 @@ def claim_handoff(
     db.commit()
 
     # Let the visitor know a human has joined (only if not already sent)
+    # Use "system" role instead of "agent" so widget treats it differently
     existing_join = db.query(ConversationHistory).filter(
         ConversationHistory.conversation_id == conversation_id,
-        ConversationHistory.role == "agent",
-        ConversationHistory.message.like("%has joined the chat%")
+        ConversationHistory.role.in_(["agent", "system"]),
+        ConversationHistory.message.contains("joined the chat")
     ).first()
 
     if not existing_join:
         joined_msg = ConversationHistory(
             conversation_id=conversation_id,
-            role="agent",
+            role="system",
             message=f"{current_user.display_name} from Datamart has joined the chat. How can I help?",
         )
         db.add(joined_msg)
         db.commit()
+        print(f"✅ Join message sent for conversation {conversation_id}")
+    else:
+        print(f"⚠️ Join message already exists for conversation {conversation_id}")
 
     return {"conversation_id": conversation_id, "mode": state.mode, "assigned_to": current_user.display_name}
 
@@ -193,6 +197,20 @@ def send_handoff_message(
     if state.mode != "human" or state.assigned_agent_id != current_user.id:
         raise HTTPException(403, "You have not claimed this conversation")
 
+    # 🔥 FIX: Check for duplicate messages before saving (with time window)
+    # Check if the exact same message was sent by the same agent in the last 5 seconds
+    time_threshold = datetime.now(timezone.utc) - timedelta(seconds=5)
+    recent_msg = db.query(ConversationHistory).filter(
+        ConversationHistory.conversation_id == conversation_id,
+        ConversationHistory.role == "agent",
+        ConversationHistory.message == payload.message,
+        ConversationHistory.created_at >= time_threshold
+    ).first()
+
+    if recent_msg:
+        print(f"⚠️ Duplicate message detected (within 5s), not saving: {payload.message[:50]}")
+        return {"id": recent_msg.id, "role": recent_msg.role, "message": recent_msg.message, "created_at": recent_msg.created_at}
+
     msg = ConversationHistory(
         conversation_id=conversation_id,
         role="agent",
@@ -226,7 +244,7 @@ def end_handoff(
 
     closing_msg = ConversationHistory(
         conversation_id=conversation_id,
-        role="agent",
+        role="system",
         message="This chat has ended. Thanks for reaching out - feel free to send another message anytime.",
     )
     db.add(closing_msg)

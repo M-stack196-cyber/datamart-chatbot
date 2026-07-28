@@ -28,6 +28,25 @@ export default function AdminPage() {
   const [toast, setToast] = useState("");
   const [error, setError] = useState("");
 
+  // ---- In-app confirmation modal ----
+  // Replaces window.confirm(), which Chrome silently suppresses whenever
+  // this tab isn't the active/focused window - that made delete buttons
+  // look completely broken (click did nothing, no error, no dialog).
+  const [confirmState, setConfirmState] = useState(null); // { message, resolve } | null
+
+  function askConfirm(message) {
+    return new Promise((resolve) => {
+      setConfirmState({ message, resolve });
+    });
+  }
+
+  function resolveConfirm(result) {
+    if (confirmState) {
+      confirmState.resolve(result);
+    }
+    setConfirmState(null);
+  }
+
   // ---- Live handoff state ----
   const [isOnline, setIsOnline] = useState(false);
   const [onlineStaff, setOnlineStaff] = useState([]);
@@ -177,7 +196,7 @@ export default function AdminPage() {
   }
 
   async function onEndChat(conversationId) {
-    const confirmed = window.confirm("End this live chat? The visitor will see a closing message.");
+    const confirmed = await askConfirm("End this live chat? The visitor will see a closing message.");
     if (!confirmed) return;
 
     try {
@@ -222,7 +241,7 @@ export default function AdminPage() {
   }
 
   async function onDeleteDocument(documentId) {
-    const confirmed = window.confirm("Delete this document and its vectors?");
+    const confirmed = await askConfirm("Delete this document and its vectors?");
     if (!confirmed) {
       return;
     }
@@ -251,7 +270,7 @@ export default function AdminPage() {
 
   async function onToggleStatus(targetUser) {
     const actionLabel = targetUser.is_active ? "deactivate" : "reactivate";
-    const confirmed = window.confirm(
+    const confirmed = await askConfirm(
       `Are you sure you want to ${actionLabel} ${targetUser.email}? ${
         targetUser.is_active ? "They will be logged out immediately and unable to sign in again until reactivated." : ""
       }`
@@ -284,7 +303,7 @@ export default function AdminPage() {
 
   // Delete a lead
   async function onDeleteLead(leadId, leadName) {
-    const confirmed = window.confirm(`Are you sure you want to delete lead "${leadName}"? This action cannot be undone.`);
+    const confirmed = await askConfirm(`Are you sure you want to delete lead "${leadName}"? This action cannot be undone.`);
     if (!confirmed) return;
 
     try {
@@ -298,7 +317,7 @@ export default function AdminPage() {
 
   // Delete a user
   async function onDeleteUser(userId, userName) {
-    const confirmed = window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`);
+    const confirmed = await askConfirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`);
     if (!confirmed) return;
 
     try {
@@ -686,6 +705,22 @@ export default function AdminPage() {
           </section>
         </>
       )}
+
+      {confirmState ? (
+        <div className="confirm-overlay" onClick={() => resolveConfirm(false)}>
+          <div className="confirm-box" onClick={(event) => event.stopPropagation()}>
+            <p className="confirm-message">{confirmState.message}</p>
+            <div className="confirm-actions">
+              <button type="button" className="button secondary" onClick={() => resolveConfirm(false)}>
+                Cancel
+              </button>
+              <button type="button" className="button danger" onClick={() => resolveConfirm(true)}>
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

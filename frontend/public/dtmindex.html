@@ -458,6 +458,20 @@
             border-bottom-left-radius: 4px;
         }
 
+        /* System messages (like "has joined") */
+        .datamart-widget-message.system {
+            background: #f0f0f0;
+            color: #666;
+            margin: 8px auto;
+            border-radius: 8px;
+            font-style: italic;
+            font-size: 13px;
+            opacity: 0.8;
+            text-align: center;
+            max-width: 100%;
+            padding: 6px 14px;
+        }
+
         @keyframes datamart-message-in {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
@@ -801,17 +815,17 @@
     </div>
 
     <!-- ============================================================
-    CHAT WIDGET JAVASCRIPT (PRODUCTION READY)
+    CHAT WIDGET JAVASCRIPT (PRODUCTION READY - DUPLICATE FIX)
     ============================================================ -->
     <script>
         (function() {
             'use strict';
 
             // ============================================================
-            // CONFIGURATION - FIXED URL!
+            // CONFIGURATION
             // ============================================================
             const CONFIG = {
-                API_URL: 'https://datamart-backend.vercel.app/api/chat-public',
+                API_URL: 'http://localhost:8000/api/chat-public',
                 WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!",
             };
 
@@ -828,6 +842,10 @@
             let isOpen = false;
             let isWaiting = false;
             let conversationId = null;
+            let lastMessageId = 0;
+
+            // Track displayed message IDs to prevent duplicates
+            let displayedMessageIds = new Set();
 
             // ============================================================
             // Utility: Get current timestamp
@@ -840,15 +858,25 @@
             // ============================================================
             // Render messages
             // ============================================================
-            function renderMessage(text, sender, timestamp) {
+            function renderMessage(text, sender, timestamp, messageId) {
+                // Skip if this message ID was already displayed
+                if (messageId && displayedMessageIds.has(messageId)) {
+                    console.log('⏭️ Skipping duplicate message ID:', messageId);
+                    return;
+                }
+
                 const div = document.createElement('div');
-                div.className = `datamart-widget-message ${sender}`;
-                div.innerHTML = `
-                    <div>${text}</div>
-                    <div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:${sender === 'user' ? 'right' : 'left'}">${timestamp || getTime()}</div>
-                `;
+                // Use 'system' class for system messages
+                const senderClass = sender === 'system' ? 'system' : sender;
+                div.className = 'datamart-widget-message ' + senderClass;
+                div.innerHTML = '<div>' + text + '</div><div style="font-size:10px;opacity:0.6;margin-top:4px;text-align:' + (sender === 'user' ? 'right' : 'left') + '">' + (timestamp || getTime()) + '</div>';
                 messagesEl.appendChild(div);
                 messagesEl.scrollTop = messagesEl.scrollHeight;
+
+                // Track this message ID
+                if (messageId) {
+                    displayedMessageIds.add(messageId);
+                }
             }
 
             // ============================================================
@@ -869,13 +897,72 @@
             }
 
             // ============================================================
+            // Poll for new messages (for handoff mode)
+            // ============================================================
+            let pollInterval = null;
+
+            async function pollMessages() {
+                if (!conversationId) return;
+
+                try {
+                    var url = CONFIG.API_URL.replace('/chat-public', '/chat-public/' + conversationId + '/messages?after_id=' + lastMessageId);
+                    console.log('📡 Polling:', url);
+
+                    var response = await fetch(url);
+                    if (!response.ok) return;
+
+                    var data = await response.json();
+                    if (!data.messages || data.messages.length === 0) return;
+
+                    for (var i = 0; i < data.messages.length; i++) {
+                        var msg = data.messages[i];
+                        // Skip if already displayed
+                        if (displayedMessageIds.has(msg.id)) {
+                            continue;
+                        }
+
+                        // Determine sender
+                        var sender = 'bot';
+                        if (msg.role === 'user') sender = 'user';
+                        else if (msg.role === 'system') sender = 'system';
+                        else if (msg.role === 'agent') sender = 'bot';
+
+                        renderMessage(msg.message, sender, msg.created_at, msg.id);
+
+                        if (msg.id > lastMessageId) {
+                            lastMessageId = msg.id;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }
+
+            // ============================================================
+            // Start/Stop polling
+            // ============================================================
+            function startPolling() {
+                if (pollInterval) return;
+                console.log('🔄 Starting message polling...');
+                pollInterval = setInterval(pollMessages, 5000);
+            }
+
+            function stopPolling() {
+                if (pollInterval) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    console.log('⏹️ Stopped message polling');
+                }
+            }
+
+            // ============================================================
             // Send message to backend
             // ============================================================
             async function sendMessage(question) {
                 if (!question || question.trim() === '') return;
                 if (isWaiting) return;
 
-                const trimmed = question.trim();
+                var trimmed = question.trim();
 
                 renderMessage(trimmed, 'user');
                 inputEl.value = '';
@@ -885,7 +972,7 @@
                 showTyping();
 
                 try {
-                    const payload = { message: trimmed };
+                    var payload = { message: trimmed };
                     if (conversationId) {
                         payload.conversation_id = conversationId;
                     }
@@ -893,7 +980,7 @@
                     console.log('📤 Sending to:', CONFIG.API_URL);
                     console.log('📤 Payload:', payload);
 
-                    const response = await fetch(CONFIG.API_URL, {
+                    var response = await fetch(CONFIG.API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -901,7 +988,7 @@
 
                     hideTyping();
 
-                    let data = {};
+                    var data = {};
                     try {
                         data = await response.json();
                     } catch (e) {
@@ -917,14 +1004,27 @@
                         console.log('💬 Conversation ID saved:', conversationId);
                     }
 
-                    if (data && data.response) {
-                        renderMessage(data.response, 'bot');
-                    } else if (data && data.answer) {
+                    // If mode is human or pending_human, start polling
+                    if (data.mode === 'human' || data.mode === 'pending_human') {
+                        console.log('👤 Human mode detected, starting polling...');
+                        startPolling();
+                    }
+
+                    // Only render bot response if it exists and mode is not human
+                    if (data.response && data.mode !== 'human') {
+                        // Don't render system messages through this path
+                        if (data.response.indexOf('has joined the chat') === -1) {
+                            renderMessage(data.response, 'bot');
+                        }
+                    } else if (data.answer && data.mode !== 'human') {
                         renderMessage(data.answer, 'bot');
                     } else if (!response.ok) {
                         renderMessage("I'm having trouble right now. Please try again in a moment. If the issue persists, contact us at info@dtm.io.", 'bot');
-                    } else {
-                        renderMessage("I couldn't find an answer to your question. Please try rephrasing.", 'bot');
+                    }
+
+                    // If mode is human, poll immediately to get the join message
+                    if (data.mode === 'human') {
+                        setTimeout(pollMessages, 500);
                     }
 
                 } catch (error) {
@@ -943,14 +1043,18 @@
             // ============================================================
             function initWidget() {
                 messagesEl.innerHTML = '';
+                displayedMessageIds.clear();
+                lastMessageId = 0;
+                stopPolling();
                 renderMessage(CONFIG.WELCOME_MESSAGE, 'bot');
 
-                document.querySelectorAll('.datamart-widget-suggestion-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const q = this.dataset.question || this.textContent.trim();
+                var suggestionBtns = document.querySelectorAll('.datamart-widget-suggestion-btn');
+                for (var i = 0; i < suggestionBtns.length; i++) {
+                    suggestionBtns[i].addEventListener('click', function() {
+                        var q = this.dataset.question || this.textContent.trim();
                         sendMessage(q);
                     });
-                });
+                }
             }
 
             // ============================================================
@@ -958,8 +1062,13 @@
             // ============================================================
             function toggleWidget() {
                 isOpen = !isOpen;
-                windowEl.classList.toggle('open', isOpen);
-                button.classList.toggle('pulse', !isOpen);
+                if (isOpen) {
+                    windowEl.classList.add('open');
+                    button.classList.remove('pulse');
+                } else {
+                    windowEl.classList.remove('open');
+                    button.classList.add('pulse');
+                }
 
                 if (isOpen) {
                     if (messagesEl.children.length === 0) {

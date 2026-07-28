@@ -677,12 +677,45 @@ Is there anything else I can help you with?"""
 
                     lead_for_notification = lead
 
-                # Notify CTO/PMO/HR team by email that a new lead came in
+                # Notify CTO/PMO/HR team by email that a new lead came in.
+                # Sending email is a slow blocking network call (SMTP handshake
+                # can easily take 1-10+ seconds, or hang far longer if the
+                # server is misconfigured/unreachable). Doing this inline was
+                # making every visitor wait for that email before they got
+                # their chat reply. Fire it on a background thread instead so
+                # the HTTP response returns immediately; the email still goes
+                # out, just without blocking anyone.
                 try:
                     from app.services.notification import NotificationService
-                    NotificationService.send_lead_notification(lead_for_notification)
+                    import threading
+                    from types import SimpleNamespace
+
+                    # Snapshot plain values now, while the DB session is
+                    # still open - the ORM object shouldn't be touched from
+                    # a background thread after this request's session closes.
+                    lead_snapshot = SimpleNamespace(
+                        id=lead_for_notification.id,
+                        name=lead_for_notification.name,
+                        email=lead_for_notification.email,
+                        phone=lead_for_notification.phone,
+                        company=lead_for_notification.company,
+                        project_title=lead_for_notification.project_title,
+                        budget=lead_for_notification.budget,
+                        timeline=lead_for_notification.timeline,
+                        industry=getattr(lead_for_notification, "industry", None),
+                        project_description=lead_for_notification.project_description,
+                        created_at=lead_for_notification.created_at,
+                    )
+
+                    def _send_lead_email_in_background(snapshot=lead_snapshot):
+                        try:
+                            NotificationService.send_lead_notification(snapshot)
+                        except Exception as bg_err:
+                            print(f"⚠️ Background lead notification failed: {bg_err}")
+
+                    threading.Thread(target=_send_lead_email_in_background, daemon=True).start()
                 except Exception as notify_err:
-                    print(f"⚠️ Lead saved but notification failed: {notify_err}")
+                    print(f"⚠️ Lead saved but notification failed to schedule: {notify_err}")
 
             # Reset the agent state after saving
             self.lead_started = False

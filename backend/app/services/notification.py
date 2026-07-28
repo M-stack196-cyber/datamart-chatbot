@@ -53,7 +53,7 @@ class NotificationService:
                 """
                 msg.attach(MIMEText(html_content, 'html'))
 
-                with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
                     server.starttls()
                     server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                     server.send_message(msg)
@@ -80,7 +80,7 @@ class NotificationService:
             msg['To'] = settings.NOTIFICATION_EMAIL
             msg.attach(MIMEText(html_content, 'html'))
             
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
                 server.starttls()
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                 server.send_message(msg)
