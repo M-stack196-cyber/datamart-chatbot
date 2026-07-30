@@ -870,7 +870,7 @@
             function getOrCreateConversationId() {
                 let convId = localStorage.getItem('datamartConversationId');
                 if (!convId) {
-                    convId = 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                   convId = crypto.randomUUID();
                     localStorage.setItem('datamartConversationId', convId);
                 }
                 return convId;
