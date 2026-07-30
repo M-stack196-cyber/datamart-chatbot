@@ -3,6 +3,7 @@ import requests
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
@@ -90,22 +91,35 @@ async def public_chat_messages(
     """Polling endpoint for the widget while mode is pending_human/human -
     returns any new messages (including the staff member's replies) since
     `after_id`."""
+    
+    # Convert the string ID to UUID for database query
+    try:
+        conversation_uuid = uuid.UUID(conversation_id)
+    except ValueError:
+        return {"messages": []}
+    
+    # Use ORM query with UUID object directly
     messages = (
         db.query(ConversationHistory)
         .filter(
-            ConversationHistory.conversation_id == conversation_id,
+            ConversationHistory.conversation_id == conversation_uuid,
             ConversationHistory.id > after_id,
         )
         .order_by(ConversationHistory.id.asc())
         .all()
     )
+    
     return {
         "messages": [
-            {"id": m.id, "role": m.role, "message": m.message, "created_at": m.created_at}
+            {
+                "id": m.id,
+                "role": m.role,
+                "message": m.message,
+                "created_at": m.created_at
+            }
             for m in messages
         ]
     }
-
 
 @router.post("/chat")
 async def app_chat(
@@ -197,14 +211,20 @@ async def get_chat_history_from_new_tables(
     db: Session = Depends(get_db)
 ):
     """Get full chat history so a returning visitor sees their past messages."""
+    
+    try:
+        conversation_uuid = uuid.UUID(conversation_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid conversation ID format")
 
+    # Use ORM query with UUID object directly
     messages = (
         db.query(ConversationHistory)
-        .filter(ConversationHistory.conversation_id == conversation_id)
+        .filter(ConversationHistory.conversation_id == conversation_uuid)
         .order_by(ConversationHistory.id.asc())
         .all()
     )
-
+    
     if not messages:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
@@ -213,19 +233,16 @@ async def get_chat_history_from_new_tables(
         "status": "active",
         "messages": [
             {
-                "id": msg.id,
-                "role": msg.role,
-                "message": msg.message,
-                "timestamp": msg.created_at.isoformat() if msg.created_at else None,
+                "id": m.id,
+                "role": m.role,
+                "message": m.message,
+                "timestamp": m.created_at.isoformat() if m.created_at else None,
             }
-            for msg in messages
+            for m in messages
         ]
     }
 
-
-# === Endpoint to get summary (FIXED: now reads from ConversationHistory,
-# the table the visitor-facing widget actually writes to - was reading
-# from the never-populated ChatConversation table before) ===
+# === Endpoint to get summary ===
 @router.get("/chat-public/{conversation_id}/summary")
 async def get_chat_summary(
     conversation_id: str,
@@ -243,10 +260,7 @@ async def get_chat_summary(
     return summary
 
 
-# === Endpoint to end conversation and trigger email (FIXED: now uses
-# generate_handoff_summary/generate_handoff_pdf, which read from
-# ConversationHistory/ContactInfo - the real tables - instead of the
-# never-populated ChatConversation/ChatMessage tables) ===
+# === Endpoint to end conversation and trigger email ===
 @router.post("/chat-public/{conversation_id}/end")
 async def end_conversation(
     conversation_id: str,
@@ -258,18 +272,23 @@ async def end_conversation(
     from app.services.pdf_service import generate_handoff_pdf
     from app.services.email_service import send_chat_completion_emails
 
-    summary = generate_handoff_summary(conversation_id, db)
-    pdf_content = generate_handoff_pdf(conversation_id, db)
+    try:
+        conversation_uuid = uuid.UUID(conversation_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid conversation ID format")
+
+    summary = generate_handoff_summary(str(conversation_uuid), db)
+    pdf_content = generate_handoff_pdf(str(conversation_uuid), db)
 
     if not pdf_content:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    lead = db.query(ContactInfo).filter_by(conversation_id=conversation_id).first()
+    lead = db.query(ContactInfo).filter_by(conversation_id=conversation_uuid).first()
     visitor_email = ""
     if lead and lead.email and lead.email != "pending@example.com":
         visitor_email = lead.email
 
-    send_chat_completion_emails(conversation_id, pdf_content, summary or {}, visitor_email)
+    send_chat_completion_emails(str(conversation_uuid), pdf_content, summary or {}, visitor_email)
 
     return {
         "status": "ended",
