@@ -61,7 +61,8 @@ class ContactInfo(Base):
         if 'conversation_id' in kwargs:
             conv_id = kwargs['conversation_id']
             if isinstance(conv_id, str):
-                kwargs['conversation_id'] = uuid.UUID(conv_id)
+                # FIXED: DO NOT convert to UUID, keep as string
+                kwargs['conversation_id'] = conv_id
         super().__init__(**kwargs)
     
     def __repr__(self) -> str:

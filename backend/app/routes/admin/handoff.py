@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -249,5 +250,40 @@ def end_handoff(
     )
     db.add(closing_msg)
     db.commit()
+
+    # Build the transcript PDF, generate a summary, and email both the
+    # visitor and every admin address - same pipeline the old standalone
+    # chat-public flow used, just pointed at the real ConversationHistory/
+    # ContactInfo tables instead. Runs on a background thread so the
+    # employee's "End chat" click doesn't hang on SMTP (same pattern as
+    # services/handoff.py's notify_available_agents).
+    def _send_transcript_in_background(conv_id=conversation_id):
+        from app.database import SessionLocal
+        from app.services.summary_service import generate_handoff_summary
+        from app.services.pdf_service import generate_handoff_pdf
+        from app.services.email_service import send_chat_completion_emails
+
+        bg_db = SessionLocal()
+        try:
+            summary = generate_handoff_summary(conv_id, bg_db)
+            pdf_content = generate_handoff_pdf(conv_id, bg_db)
+
+            if not pdf_content:
+                print(f"⚠️ No messages found - skipping transcript PDF for {conv_id}")
+                return
+
+            lead = bg_db.query(ContactInfo).filter_by(conversation_id=conv_id).first()
+            visitor_email = ""
+            if lead and lead.email and lead.email != "pending@example.com":
+                visitor_email = lead.email
+
+            send_chat_completion_emails(conv_id, pdf_content, summary or {}, visitor_email)
+            print(f"✅ Chat transcript emailed for conversation {conv_id}")
+        except Exception as e:
+            print(f"⚠️ Failed to send end-of-chat transcript for {conv_id}: {e}")
+        finally:
+            bg_db.close()
+
+    threading.Thread(target=_send_transcript_in_background, daemon=True).start()
 
     return {"conversation_id": conversation_id, "mode": state.mode}

@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
-import uuid
 
 
 class ConversationHistory(Base):
@@ -20,8 +19,8 @@ class ConversationHistory(Base):
     # Relationships
     lead = relationship("ContactInfo", back_populates="messages")
     
-    # User relationship (matching back_populates in user.py)
-    user = relationship("User", back_populates="conversation_histories")
+    # FIXED: Removed back_populates because 'User' model doesn't have 'conversation_histories'
+    user = relationship("User")
     
     # Indexes for better performance
     __table_args__ = (
@@ -36,7 +35,7 @@ class ConversationHistory(Base):
         if 'conversation_id' in kwargs:
             conv_id = kwargs['conversation_id']
             if isinstance(conv_id, str):
-                kwargs['conversation_id'] = uuid.UUID(conv_id)
+               kwargs["conversation_id"] = conv_id
         super().__init__(**kwargs)
     
     def __repr__(self) -> str:

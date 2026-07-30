@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import docx
 from fastapi import Depends, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from sqlalchemy import text
 
 from app.database import Base, engine
@@ -24,14 +25,20 @@ app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
 # ============================================================
-# CORS Configuration - Allow All Origins for Development
+# CORS Configuration - Explicitly Allow Frontend Ports
 # ============================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=[
+        "http://localhost:5173",  # React Vite Frontend
+        "http://localhost:8000",  # Backend itself
+        "http://127.0.0.1:5173", 
+        "http://127.0.0.1:8000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"], # <--- CRITICAL for widget compatibility
 )
 
 # ============================================================
@@ -58,7 +65,7 @@ def health_check():
     return {
         "status": "healthy",
         "cors_enabled": True,
-        "allowed_origins": ["*"]
+        "allowed_origins": ["http://localhost:5173", "http://localhost:8000"]
     }
 
 @app.get("/test-db")
@@ -77,6 +84,24 @@ async def extract_docx(file: UploadFile = File(...)):
     doc = docx.Document(io.BytesIO(contents))
     text_content = "\n".join(para.text for para in doc.paragraphs)
     return {"text": text_content}
+
+# ============================================================
+# Serve the Public Chat Widget (dtmindex.html)
+# ============================================================
+@app.get("/dtmindex.html", response_class=HTMLResponse)
+async def serve_chat_widget():
+    # Look for the file in the frontend/public folder
+    file_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "dtmindex.html")
+    
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    except FileNotFoundError:
+        return HTMLResponse(
+            content=f"<h1>Error: dtmindex.html not found at {file_path}</h1>", 
+            status_code=404
+        )
 
 if __name__ == "__main__":
     import uvicorn

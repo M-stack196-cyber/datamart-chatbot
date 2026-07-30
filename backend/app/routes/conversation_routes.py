@@ -53,7 +53,7 @@ def list_conversations(
     return (
         db.query(Conversation)
         .filter(Conversation.user_id == current_user.id)
-        .order_by(Conversation.updated_at.desc())
+        .order_by(Conversation.created_at.desc())
         .all()
     )
 

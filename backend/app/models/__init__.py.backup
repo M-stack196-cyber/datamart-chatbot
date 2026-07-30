@@ -12,10 +12,10 @@ from .feedback import Feedback
 # Aliases for backward compatibility
 Conversation = ChatConversation
 
-# Role constants - RESTORED hr and ceo
-USER_ROLES = ["admin", "pmo", "cto", "hr", "ceo", "customer"]
-STAFF_ROLES = ["admin", "pmo", "cto", "hr", "ceo"]
-MANAGE_ROLES = ["admin", "pmo", "cto", "hr", "ceo"]
+# Role constants
+USER_ROLES = ["admin", "pmo", "cto", "customer"]
+STAFF_ROLES = ["admin", "pmo", "cto"]
+MANAGE_ROLES = ["admin", "pmo", "cto"]
 MESSAGE_ROLES = ["user", "bot", "agent", "system"]
 
 # Document constants

@@ -2,8 +2,8 @@ import json
 import re
 from datetime import datetime, timezone
 from typing import Dict, Optional, Tuple, Any
-from uuid import UUID
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.models.contact_info import ContactInfo
 from app.models.conversation_history import ConversationHistory
 from app.models.conversation_state import ConversationState
@@ -103,13 +103,21 @@ class LeadCaptureAgent:
     # ------------------------------------------------------------------
     # State persistence (fixes the "bot forgets mid-conversation" bug)
     # ------------------------------------------------------------------
-    def _load_state(self, conversation_id: UUID) -> ConversationState:
+    def _load_state(self, conversation_id: str) -> ConversationState:
         """Load conversation state from the database, creating a fresh row
         the first time this conversation is seen. Populates the agent's
         instance attributes so process_message can pick up where it left off."""
-        state = self.db.query(ConversationState).filter_by(
-            conversation_id=conversation_id
+        
+        # CRITICAL FIX: Use raw SQL text() to force SQLAlchemy to bypass UUID cast
+        result = self.db.execute(
+            text("SELECT * FROM conversation_state WHERE conversation_id = :conv_id"),
+            {"conv_id": conversation_id}
         ).first()
+        
+        state = None
+        if result:
+            # Convert the raw row result back to the ORM object
+            state = self.db.query(ConversationState).get(result.id)
 
         if not state:
             state = ConversationState(conversation_id=conversation_id, mode="bot")
@@ -417,7 +425,7 @@ What specific information would you like to know about?"""
     # ------------------------------------------------------------------
     # Main entry point
     # ------------------------------------------------------------------
-    def process_message(self, conversation_id: UUID, message: str) -> Tuple[Optional[str], bool]:
+    def process_message(self, conversation_id: str, message: str) -> Tuple[Optional[str], bool]:
         # Load persisted state first - this is what makes the bot remember
         # what it already asked, even on a brand-new serverless invocation.
         self._load_state(conversation_id)
@@ -579,7 +587,7 @@ Is there anything else I can help you with?"""
     # ------------------------------------------------------------------
     # Live handoff
     # ------------------------------------------------------------------
-    def _start_handoff(self, conversation_id: UUID) -> str:
+    def _start_handoff(self, conversation_id: str) -> str:
         """Switch this conversation into pending_human mode and notify staff."""
         from app.services.handoff import notify_available_agents
 
@@ -601,7 +609,7 @@ Is there anything else I can help you with?"""
                 "In the meantime, would you like to share a few details about your project so we can follow up faster?"
             )
 
-    def _save_lead(self, conversation_id: UUID):
+    def _save_lead(self, conversation_id: str):
         """Save lead - updates existing record instead of inserting duplicate"""
         try:
             print(f"📝 Saving lead for conversation: {conversation_id}")
@@ -728,7 +736,7 @@ Is there anything else I can help you with?"""
             traceback.print_exc()
             # Don't raise - let the conversation continue
 
-    def _save_message(self, conversation_id: UUID, role: str, message: str):
+    def _save_message(self, conversation_id: str, role: str, message: str):
         """Save message - handles missing contact_info gracefully"""
         if self.is_internal:
             self._temp_messages.append({"role": role, "message": message})
