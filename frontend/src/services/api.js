@@ -2,8 +2,8 @@
 // API CONFIGURATION
 // ============================================================
 
-// HARDCODED: Use localhost for development
-const API_BASE_URL = "http://127.0.0.1:8000";
+// Use Vite's import.meta.env for dynamic environment variables
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 let getTokenRef = () => null;
 let onUnauthorizedRef = () => {};

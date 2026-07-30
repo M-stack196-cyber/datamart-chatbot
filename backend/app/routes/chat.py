@@ -57,42 +57,6 @@ async def public_chat(
     if response is None and agent.mode == "bot":
         response = await process_rag_query(request.message, db)
 
-    # === STORE IN NEW CHAT TABLES TOO ===
-    # Get or create conversation record in new tables
-    conv = db.query(ChatConversation).filter(
-        ChatConversation.conversation_id == conversation_id
-    ).first()
-    
-    if not conv:
-        conv = ChatConversation(
-            conversation_id=conversation_id,
-            status="active"
-        )
-        db.add(conv)
-        db.commit()
-        db.refresh(conv)
-    
-    # Store user message
-    user_msg = ChatMessage(
-        conversation_id=conv.id,
-        role="user",
-        message=request.message,
-        timestamp=datetime.utcnow()
-    )
-    db.add(user_msg)
-    
-    # Store bot response (if not None)
-    if response:
-        bot_msg = ChatMessage(
-            conversation_id=conv.id,
-            role="bot",
-            message=response,
-            timestamp=datetime.utcnow()
-        )
-        db.add(bot_msg)
-    
-    db.commit()
-
     return {
         "response": response,
         "conversation_id": conversation_id,
@@ -224,34 +188,33 @@ async def get_conversation(
     }
 
 
-# === NEW: Endpoint to get history from new tables ===
+# === Endpoint to get history for a returning visitor ===
 @router.get("/chat-public/{conversation_id}/history")
 async def get_chat_history_from_new_tables(
     conversation_id: str,
     db: Session = Depends(get_db)
 ):
-    """Get full chat history from the new chat history tables"""
-    
-    conv = db.query(ChatConversation).filter(
-        ChatConversation.conversation_id == conversation_id
-    ).first()
-    
-    if not conv:
+    """Get full chat history so a returning visitor sees their past messages."""
+
+    messages = (
+        db.query(ConversationHistory)
+        .filter(ConversationHistory.conversation_id == conversation_id)
+        .order_by(ConversationHistory.id.asc())
+        .all()
+    )
+
+    if not messages:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    messages = db.query(ChatMessage).filter(
-        ChatMessage.conversation_id == conv.id
-    ).order_by(ChatMessage.timestamp).all()
-    
+
     return {
         "conversation_id": conversation_id,
-        "status": conv.status,
+        "status": "active",
         "messages": [
             {
                 "id": msg.id,
                 "role": msg.role,
                 "message": msg.message,
-                "timestamp": msg.timestamp.isoformat()
+                "timestamp": msg.created_at.isoformat() if msg.created_at else None,
             }
             for msg in messages
         ]

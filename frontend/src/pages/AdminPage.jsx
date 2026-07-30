@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import { formatDateTime } from "../utils";
+// FIXED: Adjusted import path to match your folder structure
+import ChatSummary from "../components/admin/ChatSummary";
 
 // Kept in sync by hand with backend app/models/__init__.py.
 // MANAGE_ROLES can change roles / deactivate accounts.
@@ -29,10 +31,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
 
   // ---- In-app confirmation modal ----
-  // Replaces window.confirm(), which Chrome silently suppresses whenever
-  // this tab isn't the active/focused window - that made delete buttons
-  // look completely broken (click did nothing, no error, no dialog).
-  const [confirmState, setConfirmState] = useState(null); // { message, resolve } | null
+  const [confirmState, setConfirmState] = useState(null);
 
   function askConfirm(message) {
     return new Promise((resolve) => {
@@ -70,10 +69,6 @@ export default function AdminPage() {
       setUsers(userList);
       setLeads(leadsList || []);
 
-      // The backend doesn't have a dedicated "who am I, and am I online"
-      // endpoint - but the current user's own row is right there in the
-      // user list, so we can read is_online off it instead of adding a
-      // new route just for this.
       const myEmail = user?.email;
       if (myEmail) {
         const myRow = (userList || []).find((u) => u.email === myEmail);
@@ -130,9 +125,6 @@ export default function AdminPage() {
     }
   }, []);
 
-  // Poll the queue/active list every 5s while the Live Chats tab is open,
-  // and poll the open conversation's messages too so replies from the
-  // visitor show up without a manual refresh.
   useEffect(() => {
     if (activeTab !== "livechats") {
       return undefined;
@@ -301,7 +293,6 @@ export default function AdminPage() {
     }
   }
 
-  // Delete a lead
   async function onDeleteLead(leadId, leadName) {
     const confirmed = await askConfirm(`Are you sure you want to delete lead "${leadName}"? This action cannot be undone.`);
     if (!confirmed) return;
@@ -315,7 +306,6 @@ export default function AdminPage() {
     }
   }
 
-  // Delete a user
   async function onDeleteUser(userId, userName) {
     const confirmed = await askConfirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`);
     if (!confirmed) return;
@@ -552,6 +542,7 @@ export default function AdminPage() {
                   <th>Status</th>
                   <th>Received</th>
                   <th>Actions</th>
+                  <th>Summary</th>
                 </tr>
               </thead>
               <tbody>
@@ -593,6 +584,9 @@ export default function AdminPage() {
                           Delete
                         </button>
                       )}
+                    </td>
+                    <td>
+                      <ChatSummary conversationId={lead.conversation_id} />
                     </td>
                   </tr>
                 ))}
@@ -700,6 +694,11 @@ export default function AdminPage() {
                 >
                   End this chat
                 </button>
+
+                {/* === CHAT SUMMARY SECTION === */}
+                <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+                  <ChatSummary conversationId={selectedConversationId} />
+                </div>
               </div>
             ) : null}
           </section>
