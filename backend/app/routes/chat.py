@@ -12,6 +12,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.conversation_state import ConversationState
 from app.models.conversation_history import ConversationHistory
+from app.models.contact_info import ContactInfo
 from app.models import STAFF_ROLES
 from app.models import ChatConversation, ChatMessage
 
@@ -121,10 +122,13 @@ async def app_chat(
         response = await process_rag_query(request.message, db)
 
     # === STORE IN NEW CHAT TABLES TOO ===
+    # NOTE: this feeds the separate internal /api/conversations doc-chat
+    # feature for logged-in users. Left untouched on purpose - do not
+    # merge with the public chat-public flow's ConversationHistory writes.
     conv = db.query(ChatConversation).filter(
         ChatConversation.conversation_id == conversation_id
     ).first()
-    
+
     if not conv:
         conv = ChatConversation(
             conversation_id=conversation_id,
@@ -135,7 +139,7 @@ async def app_chat(
         db.add(conv)
         db.commit()
         db.refresh(conv)
-    
+
     user_msg = ChatMessage(
         conversation_id=conv.id,
         role="user",
@@ -143,7 +147,7 @@ async def app_chat(
         timestamp=datetime.utcnow()
     )
     db.add(user_msg)
-    
+
     if response:
         bot_msg = ChatMessage(
             conversation_id=conv.id,
@@ -152,7 +156,7 @@ async def app_chat(
             timestamp=datetime.utcnow()
         )
         db.add(bot_msg)
-    
+
     db.commit()
 
     return {
@@ -173,8 +177,6 @@ async def get_conversation(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    from app.models.contact_info import ContactInfo
-
     if current_user.role not in STAFF_ROLES:
         raise HTTPException(403, "Insufficient permissions")
 
@@ -221,77 +223,54 @@ async def get_chat_history_from_new_tables(
     }
 
 
-# === NEW: Endpoint to get summary ===
+# === Endpoint to get summary (FIXED: now reads from ConversationHistory,
+# the table the visitor-facing widget actually writes to - was reading
+# from the never-populated ChatConversation table before) ===
 @router.get("/chat-public/{conversation_id}/summary")
 async def get_chat_summary(
     conversation_id: str,
     db: Session = Depends(get_db)
 ):
-    """Get chat summary from the new chat summary table"""
-    
-    conv = db.query(ChatConversation).filter(
-        ChatConversation.conversation_id == conversation_id
-    ).first()
-    
-    if not conv:
+    """Get chat summary for a visitor conversation."""
+
+    from app.services.summary_service import generate_handoff_summary
+
+    summary = generate_handoff_summary(conversation_id, db)
+
+    if not summary:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    from app.services.summary_service import generate_chat_summary
-    summary = generate_chat_summary(conv.id, db)
-    
+
     return summary
 
 
-# === NEW: Endpoint to end conversation and trigger email ===
+# === Endpoint to end conversation and trigger email (FIXED: now uses
+# generate_handoff_summary/generate_handoff_pdf, which read from
+# ConversationHistory/ContactInfo - the real tables - instead of the
+# never-populated ChatConversation/ChatMessage tables) ===
 @router.post("/chat-public/{conversation_id}/end")
 async def end_conversation(
     conversation_id: str,
     db: Session = Depends(get_db)
 ):
-    """End a conversation and trigger email notifications"""
-    
-    conv = db.query(ChatConversation).filter(
-        ChatConversation.conversation_id == conversation_id
-    ).first()
-    
-    if not conv:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    # Mark as ended
-    conv.status = "ended"
-    conv.ended_at = datetime.utcnow()
-    db.commit()
-    
-    # Import services
-    try:
-        from app.services.summary_service import generate_chat_summary
-        from app.services.pdf_service import generate_chat_pdf
-        from app.services.email_service import send_chat_completion_emails
-    except ImportError as e:
-        print(f"⚠️ Service import error: {e}")
-        return {
-            "status": "ended",
-            "message": "Chat ended, but services not available.",
-            "conversation_id": conversation_id
-        }
-    
-    # Generate summary
-    summary = generate_chat_summary(conv.id, db)
-    
-    # Generate PDF
-    pdf_content = generate_chat_pdf(conversation_id, db)
-    
+    """End a conversation and trigger email notifications."""
+
+    from app.services.summary_service import generate_handoff_summary
+    from app.services.pdf_service import generate_handoff_pdf
+    from app.services.email_service import send_chat_completion_emails
+
+    summary = generate_handoff_summary(conversation_id, db)
+    pdf_content = generate_handoff_pdf(conversation_id, db)
+
     if not pdf_content:
-        return {
-            "status": "error",
-            "message": "Failed to generate PDF",
-            "conversation_id": conversation_id
-        }
-    
-    # Send emails
-    visitor_email = conv.visitor_email or ""
-    send_chat_completion_emails(conversation_id, pdf_content, summary, visitor_email)
-    
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    lead = db.query(ContactInfo).filter_by(conversation_id=conversation_id).first()
+    visitor_email = ""
+    if lead and lead.email and lead.email != "pending@example.com":
+        visitor_email = lead.email
+
+    send_chat_completion_emails(conversation_id, pdf_content, summary or {}, visitor_email)
+
     return {
         "status": "ended",
         "message": "Chat ended and emails sent",
