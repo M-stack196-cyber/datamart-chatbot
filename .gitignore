@@ -10,3 +10,8 @@ frontend/dist/
 backend/.env.save.1
 .env.save*
 .vercel
+backend/datamart.db
+*.db
+__pycache__/
+*.pyc
+.env
