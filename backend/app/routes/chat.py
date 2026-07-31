@@ -79,8 +79,8 @@ async def public_chat_status(conversation_id: str, db: Session = Depends(get_db)
         return {"mode": "bot", "agent_name": None}
 
     agent_name = None
-    if state.mode == "human" and state.agent:
-        agent_name = state.agent.display_name
+    if state.mode == "human" and state.assigned_agent:
+        agent_name = state.assigned_agent.display_name
 
     return {"mode": state.mode, "agent_name": agent_name}
 

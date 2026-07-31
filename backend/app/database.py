@@ -28,7 +28,23 @@ else:
     print("✅ Using PostgreSQL")
 
 # Create engine
-engine = create_engine(DATABASE_URL)
+# Validate pooled connections before every use so expired PostgreSQL/Neon
+# SSL connections are replaced instead of causing 500 errors.
+engine_options = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
+
+if DATABASE_URL.startswith("sqlite"):
+    engine_options["connect_args"] = {"check_same_thread": False}
+else:
+    engine_options.update(
+        pool_size=5,
+        max_overflow=10,
+        pool_timeout=30,
+    )
+
+engine = create_engine(DATABASE_URL, **engine_options)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

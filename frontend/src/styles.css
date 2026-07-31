@@ -435,11 +435,14 @@ td {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-  max-height: 480px;
 }
 
 .handoff-chat-window .message-list {
+  height: clamp(220px, 35vh, 320px);
+  min-height: 220px;
   max-height: 320px;
+  flex: 0 0 auto;
+  overflow-y: auto;
 }
 
 .button.small,
