@@ -639,6 +639,37 @@
                 right: 16px;
             }
         }
+
+        .datamart-widget-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .datamart-widget-new-conversation {
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .datamart-widget-new-conversation:focus-visible,
+        .datamart-widget-header-close:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
+
+        .datamart-widget-new-conversation:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
     </style>
 </head>
 <body>
@@ -674,7 +705,7 @@
             </div>
         </div>
         <div class="hero-image">
-            <img 
+            <img
                 src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=400&fit=crop&crop=center"
                 alt="Datamart team collaboration"
             />
@@ -800,7 +831,25 @@
             <div class="datamart-widget-header-title">
                 <span>💬</span> Datamart AI
             </div>
-            <button class="datamart-widget-header-close" id="datamartChatClose">✕</button>
+            <div class="datamart-widget-header-actions">
+                <button
+                    type="button"
+                    class="datamart-widget-new-conversation"
+                    id="datamartNewConversation"
+                    title="Start a different topic"
+                    aria-label="Start a new conversation"
+                >
+                    ＋ New
+                </button>
+                <button
+                    type="button"
+                    class="datamart-widget-header-close"
+                    id="datamartChatClose"
+                    aria-label="Close chat"
+                >
+                    ✕
+                </button>
+            </div>
         </div>
 
         <!-- Messages -->
@@ -838,12 +887,15 @@
                 WELCOME_MESSAGE: "👋 Hi! I'm Datamart's AI assistant. Ask me anything about our services!",
             };
 
+            const CONVERSATION_STORAGE_KEY = 'datamartConversationId';
+
             // ============================================================
             // DOM Elements
             // ============================================================
             const button = document.getElementById('datamartChatButton');
             const windowEl = document.getElementById('datamartChatWindow');
             const closeBtn = document.getElementById('datamartChatClose');
+            const newConversationBtn = document.getElementById('datamartNewConversation');
             const messagesEl = document.getElementById('datamartMessages');
             const inputEl = document.getElementById('datamartChatInput');
             const sendBtn = document.getElementById('datamartChatSend');
@@ -864,20 +916,101 @@
                 return CONFIG.API_URL.replace('/chat-public', `/chat-public/${id}/messages`);
             }
 
+            function historyUrl(id) {
+                return CONFIG.API_URL.replace('/chat-public', `/chat-public/${id}/history`);
+            }
+
+            function normalizeMessageRole(role) {
+                if (role === 'assistant' || role === 'bot') {
+                    return 'bot';
+                }
+
+                if (
+                    role === 'user' ||
+                    role === 'agent' ||
+                    role === 'system'
+                ) {
+                    return role;
+                }
+
+                return 'bot';
+            }
+
             // ============================================================
             // CONVERSATION ID MANAGEMENT (NEW)
             // ============================================================
             function getOrCreateConversationId() {
-                let convId = localStorage.getItem('datamartConversationId');
+                let convId = localStorage.getItem(
+                    CONVERSATION_STORAGE_KEY
+                );
+
                 if (!convId) {
-                   convId = crypto.randomUUID();
-                    localStorage.setItem('datamartConversationId', convId);
+                    convId = crypto.randomUUID();
+                    localStorage.setItem(
+                        CONVERSATION_STORAGE_KEY,
+                        convId
+                    );
                 }
+
                 return convId;
             }
 
             function saveConversationId(id) {
-                localStorage.setItem('datamartConversationId', id);
+                localStorage.setItem(
+                    CONVERSATION_STORAGE_KEY,
+                    id
+                );
+            }
+
+            function resetConversationState() {
+                stopPolling();
+
+                localStorage.removeItem(
+                    CONVERSATION_STORAGE_KEY
+                );
+
+                conversationId = null;
+                currentMode = 'bot';
+                lastMessageId = 0;
+                pollStarting = false;
+                pollInFlight = false;
+                isWaiting = false;
+
+                inputEl.value = '';
+                sendBtn.disabled = false;
+                newConversationBtn.disabled = false;
+
+                messagesEl.innerHTML = '';
+                renderMessage(
+                    CONFIG.WELCOME_MESSAGE,
+                    'bot'
+                );
+
+                inputEl.focus();
+            }
+
+            function startNewConversation() {
+                if (isWaiting) {
+                    return;
+                }
+
+                const existingConversationId =
+                    conversationId ||
+                    localStorage.getItem(
+                        CONVERSATION_STORAGE_KEY
+                    );
+
+                if (existingConversationId) {
+                    const confirmed = window.confirm(
+                        'Start a new conversation? Your previous chat will remain safely saved.'
+                    );
+
+                    if (!confirmed) {
+                        return;
+                    }
+                }
+
+                resetConversationState();
             }
 
             // ============================================================
@@ -886,32 +1019,107 @@
             async function loadChatHistory(convId) {
                 try {
                     const response = await fetch(
-                        `${CONFIG.API_URL}/${convId}/history`
+                        historyUrl(convId)
                     );
+
+                    if (!response.ok) {
+                        return false;
+                    }
+
                     const data = await response.json();
-                    if (data.messages && data.messages.length > 0) {
+
+                    if (conversationId !== convId) {
+                        return false;
+                    }
+
+                    if (
+                        data.messages &&
+                        data.messages.length > 0
+                    ) {
                         messagesEl.innerHTML = '';
-                        data.messages.forEach(msg => {
-                            renderMessage(msg.message, msg.role);
+                        lastMessageId = 0;
+
+                        data.messages.forEach((msg) => {
+                            renderMessage(
+                                msg.message,
+                                normalizeMessageRole(msg.role),
+                                msg.timestamp
+                            );
+
+                            if (Number.isInteger(msg.id)) {
+                                lastMessageId = Math.max(
+                                    lastMessageId,
+                                    msg.id
+                                );
+                            }
                         });
+
                         return true;
                     }
+
                     return false;
                 } catch (error) {
-                    console.error('Error loading chat history:', error);
+                    console.error(
+                        'Error loading chat history:',
+                        error
+                    );
                     return false;
                 }
             }
 
-            // ============================================================
-            // End Chat on Page Unload (NEW)
-            // ============================================================
-            function endChatOnUnload() {
-                if (conversationId && isOpen) {
-                    navigator.sendBeacon(`${CONFIG.API_URL}/${conversationId}/end`);
+            async function restoreConversation(convId) {
+                conversationId = convId;
+
+                const hasHistory = await loadChatHistory(
+                    convId
+                );
+
+                if (conversationId !== convId) {
+                    return;
+                }
+
+                if (!hasHistory) {
+                    localStorage.removeItem(
+                        CONVERSATION_STORAGE_KEY
+                    );
+                    conversationId = null;
+                    currentMode = 'bot';
+                    lastMessageId = 0;
+                    messagesEl.innerHTML = '';
+                    renderMessage(
+                        CONFIG.WELCOME_MESSAGE,
+                        'bot'
+                    );
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        statusUrl(convId)
+                    );
+                    const status = await response.json();
+
+                    if (conversationId !== convId) {
+                        return;
+                    }
+
+                    currentMode = status.mode || 'bot';
+
+                    if (
+                        currentMode === 'pending_human' ||
+                        currentMode === 'human'
+                    ) {
+                        startPolling();
+                    } else {
+                        stopPolling();
+                    }
+                } catch (error) {
+                    console.error(
+                        'Error restoring chat status:',
+                        error
+                    );
                 }
             }
-            window.addEventListener('beforeunload', endChatOnUnload);
 
             async function primeLastMessageId() {
                 if (!conversationId) return;
@@ -931,9 +1139,21 @@
 
             async function pollOnce() {
                 if (!conversationId || pollInFlight) return;
+
+                const polledConversationId = conversationId;
                 pollInFlight = true;
+
                 try {
-                    const res = await fetch(`${messagesUrl(conversationId)}?after_id=${lastMessageId}`);
+                    const res = await fetch(
+                        `${messagesUrl(polledConversationId)}?after_id=${lastMessageId}`
+                    );
+
+                    if (
+                        conversationId !==
+                        polledConversationId
+                    ) {
+                        return;
+                    }
                     const data = await res.json();
                     (data.messages || []).forEach((m) => {
                         if (m.id <= lastMessageId) return;
@@ -948,8 +1168,17 @@
                         lastMessageId = Math.max(lastMessageId, m.id);
                     });
 
-                    const statusRes = await fetch(statusUrl(conversationId));
+                    const statusRes = await fetch(
+                        statusUrl(polledConversationId)
+                    );
                     const statusData = await statusRes.json();
+
+                    if (
+                        conversationId !==
+                        polledConversationId
+                    ) {
+                        return;
+                    }
                     if (statusData.mode && statusData.mode !== currentMode) {
                         currentMode = statusData.mode;
                         if (currentMode === 'closed' || currentMode === 'bot') {
@@ -1035,6 +1264,7 @@
                 inputEl.value = '';
                 isWaiting = true;
                 sendBtn.disabled = true;
+                newConversationBtn.disabled = true;
 
                 showTyping();
 
@@ -1107,6 +1337,7 @@
                 } finally {
                     isWaiting = false;
                     sendBtn.disabled = false;
+                    newConversationBtn.disabled = false;
                     inputEl.focus();
                 }
             }
@@ -1135,21 +1366,23 @@
                 button.classList.toggle('pulse', !isOpen);
 
                 if (isOpen) {
-                    const savedId = localStorage.getItem('datamartConversationId');
+                    const savedId = localStorage.getItem(
+                        CONVERSATION_STORAGE_KEY
+                    );
+
                     if (savedId) {
-                        conversationId = savedId;
-                        loadChatHistory(savedId).then(hasHistory => {
-                            if (!hasHistory) {
-                                messagesEl.innerHTML = '';
-                                renderMessage(CONFIG.WELCOME_MESSAGE, 'bot');
-                            }
-                        });
+                        restoreConversation(savedId);
                     } else {
                         messagesEl.innerHTML = '';
-                        renderMessage(CONFIG.WELCOME_MESSAGE, 'bot');
+                        renderMessage(
+                            CONFIG.WELCOME_MESSAGE,
+                            'bot'
+                        );
                     }
+
                     inputEl.focus();
-                    messagesEl.scrollTop = messagesEl.scrollHeight;
+                    messagesEl.scrollTop =
+                        messagesEl.scrollHeight;
                 }
             }
 
@@ -1158,6 +1391,10 @@
             // ============================================================
             button.addEventListener('click', toggleWidget);
             closeBtn.addEventListener('click', toggleWidget);
+            newConversationBtn.addEventListener(
+                'click',
+                startNewConversation
+            );
 
             sendBtn.addEventListener('click', function() {
                 sendMessage(inputEl.value);
