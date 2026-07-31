@@ -11,6 +11,15 @@ from app.models.conversation_history import ConversationHistory
 from app.models.contact_info import ContactInfo
 
 
+TRANSCRIPT_ROLE_LABELS = {
+    "user": "VISITOR",
+    "assistant": "BOT",
+    "bot": "BOT",
+    "agent": "AGENT",
+    "system": "SYSTEM",
+}
+
+
 def generate_chat_pdf(conversation_id: str, db: Session):
     """Generate PDF of chat transcript (OLD standalone chat-public flow,
     uses ChatConversation/ChatMessage). Left untouched - still used by
@@ -63,7 +72,10 @@ def generate_chat_pdf(conversation_id: str, db: Session):
     story.append(Spacer(1, 0.1*inch))
 
     for msg in messages:
-        role_name = msg.role.upper()
+        role_name = TRANSCRIPT_ROLE_LABELS.get(
+            msg.role,
+            msg.role.upper(),
+        )
         time_str = msg.timestamp.strftime("%H:%M")
 
         msg_text = f"<b>[{role_name}]</b> {time_str}<br/>{msg.message}"
@@ -150,10 +162,11 @@ def generate_handoff_pdf(conversation_id: str, db: Session):
     story.append(Paragraph("Chat History", heading_style))
     story.append(Spacer(1, 0.1*inch))
 
-    role_labels = {"user": "VISITOR", "bot": "BOT", "agent": "AGENT", "system": "SYSTEM"}
-
     for msg in messages:
-        role_name = role_labels.get(msg.role, msg.role.upper())
+        role_name = TRANSCRIPT_ROLE_LABELS.get(
+            msg.role,
+            msg.role.upper(),
+        )
         time_str = msg.created_at.strftime("%H:%M") if msg.created_at else ""
 
         msg_text = f"<b>[{role_name}]</b> {time_str}<br/>{msg.message}"

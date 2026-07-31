@@ -14,7 +14,12 @@ from .feedback import Feedback
 USER_ROLES = ["admin", "pmo", "cto", "hr", "ceo", "customer"]
 STAFF_ROLES = ["admin", "pmo", "cto", "hr", "ceo"]
 MANAGE_ROLES = ["admin", "pmo", "cto", "hr", "ceo"]
-MESSAGE_ROLES = ["user", "bot", "agent", "system"]
+# New AI messages use "assistant". The "bot" role remains supported
+# only for existing legacy chat records.
+CANONICAL_MESSAGE_ROLES = ["user", "assistant", "agent", "system"]
+LEGACY_MESSAGE_ROLES = ["bot"]
+AI_MESSAGE_ROLES = ("assistant", "bot")
+MESSAGE_ROLES = [*CANONICAL_MESSAGE_ROLES, *LEGACY_MESSAGE_ROLES]
 
 # Document constants
 DOCUMENT_VISIBILITY = ["public", "private", "team"]
@@ -30,4 +35,4 @@ PROJECT_PRIORITY = ["low", "medium", "high", "urgent"]
 
 # Chat constants
 CHAT_MODES = ["bot", "pending_human", "human", "closed"]
-CHAT_ROLES = ["user", "bot", "agent", "system"]
+CHAT_ROLES = MESSAGE_ROLES.copy()

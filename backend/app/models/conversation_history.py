@@ -16,7 +16,8 @@ class ConversationHistory(Base):
         nullable=False,
     )
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
-    role = Column(String(20), nullable=False)  # user, assistant, system
+    # Current roles: user, assistant, agent, system. "bot" is legacy only.
+    role = Column(String(20), nullable=False)
     message = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

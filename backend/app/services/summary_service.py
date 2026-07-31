@@ -1,5 +1,10 @@
 from sqlalchemy.orm import Session
-from app.models import ChatConversation, ChatMessage, ChatSummary
+from app.models import (
+    AI_MESSAGE_ROLES,
+    ChatConversation,
+    ChatMessage,
+    ChatSummary,
+)
 from app.models.conversation_history import ConversationHistory
 from datetime import datetime
 
@@ -32,7 +37,7 @@ def generate_chat_summary(conversation_id: int, db: Session):
                 key_points.append("📋 Project requirements discussed")
             if "service" in msg_lower or "offer" in msg_lower:
                 key_points.append("💼 Services discussed")
-        elif msg.role == "bot":
+        elif msg.role in AI_MESSAGE_ROLES:
             bot_messages.append(msg.message)
         elif msg.role == "agent":
             key_points.append("👤 Agent assistance provided")
@@ -128,7 +133,7 @@ def generate_handoff_summary(conversation_id: str, db: Session):
                 key_points.append("📋 Project requirements discussed")
             if "service" in msg_lower or "offer" in msg_lower:
                 key_points.append("💼 Services discussed")
-        elif msg.role == "bot":
+        elif msg.role in AI_MESSAGE_ROLES:
             bot_messages.append(msg.message)
         elif msg.role == "agent":
             agent_messages.append(msg.message)
