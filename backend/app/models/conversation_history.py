@@ -1,8 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, UUID, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
-import uuid
 
 
 class ConversationHistory(Base):
@@ -11,7 +10,11 @@ class ConversationHistory(Base):
     __tablename__ = "conversation_history"
     
     id = Column(Integer, primary_key=True, index=True)
-    conversation_id = Column(UUID(as_uuid=True), ForeignKey("contact_info.conversation_id", ondelete="CASCADE"), nullable=False)
+    conversation_id = Column(
+        String(50),
+        ForeignKey("contact_info.conversation_id", ondelete="CASCADE"),
+        nullable=False,
+    )
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     role = Column(String(20), nullable=False)  # user, assistant, system
     message = Column(Text, nullable=False)
@@ -30,22 +33,6 @@ class ConversationHistory(Base):
         Index("ix_conversation_history_role", "role"),
         Index("ix_conversation_history_created_at", "created_at"),
     )
-    
-    def __init__(self, **kwargs):
-        """Handle UUID conversion - ensures conversation_id is properly converted to UUID."""
-        if 'conversation_id' in kwargs:
-            conv_id = kwargs['conversation_id']
-            if isinstance(conv_id, str):
-                try:
-                    # Convert string to UUID if it's a valid UUID format
-                    kwargs['conversation_id'] = uuid.UUID(conv_id)
-                except ValueError:
-                    # If not a valid UUID, keep as string (will be handled by database)
-                    # But better to log a warning
-                    print(f"Warning: Invalid UUID format for conversation_id: {conv_id}")
-                    # Keep as string - database will reject if invalid
-                    kwargs['conversation_id'] = conv_id
-        super().__init__(**kwargs)
     
     def __repr__(self) -> str:
         return f"<ConversationHistory(id={self.id}, conversation_id={self.conversation_id}, role={self.role})>"
@@ -72,15 +59,3 @@ class ConversationHistory(Base):
     def message_preview(self) -> str:
         """Get a preview of the message (first 100 characters)."""
         return self.message[:100] + "..." if len(self.message) > 100 else self.message
-    
-    @classmethod
-    def normalize_conversation_id(cls, conversation_id):
-        """Helper method to convert string to UUID for queries."""
-        if isinstance(conversation_id, uuid.UUID):
-            return conversation_id
-        if isinstance(conversation_id, str):
-            try:
-                return uuid.UUID(conversation_id)
-            except ValueError:
-                return conversation_id
-        return conversation_id

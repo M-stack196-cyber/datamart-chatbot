@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, UUID, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -11,7 +11,13 @@ class ContactInfo(Base):
     __tablename__ = "contact_info"
     
     id = Column(Integer, primary_key=True, index=True)
-    conversation_id = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, index=True)
+    conversation_id = Column(
+        String(50),
+        default=lambda: str(uuid.uuid4()),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
     
     # Required fields
     name = Column(String(100), nullable=False)
@@ -55,15 +61,6 @@ class ContactInfo(Base):
         Index("ix_contact_info_status", "status"),
         Index("ix_contact_info_created_at", "created_at"),
     )
-    
-    def __init__(self, **kwargs):
-        """Handle UUID conversion for SQLite compatibility."""
-        if 'conversation_id' in kwargs:
-            conv_id = kwargs['conversation_id']
-            if isinstance(conv_id, str):
-                # FIXED: DO NOT convert to UUID, keep as string
-                kwargs['conversation_id'] = conv_id
-        super().__init__(**kwargs)
     
     def __repr__(self) -> str:
         return f"<ContactInfo(id={self.id}, name={self.name}, email={self.email})>"

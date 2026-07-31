@@ -2,14 +2,18 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
-import uuid
 
 
 class ConversationState(Base):
     __tablename__ = "conversation_state"
 
     id = Column(Integer, primary_key=True, index=True)
-    conversation_id = Column(String, nullable=False, index=True)  # Changed to String to support widget IDs
+    conversation_id = Column(
+        String(50),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
     
     lead_started = Column(Boolean, default=False)
     awaiting_field = Column(String, nullable=True)
@@ -30,13 +34,3 @@ class ConversationState(Base):
 
     # Relationships
     assigned_agent = relationship("User", foreign_keys=[assigned_agent_id])
-
-    def __init__(self, **kwargs):
-        # Extract conversation_id from kwargs manually
-        conv_id = kwargs.pop("conversation_id", None)
-        
-        # Set it directly as a string (NO UUID CASTING)
-        kwargs["conversation_id"] = conv_id
-        
-        # Let SQLAlchemy handle the rest of the initialization
-        super().__init__(**kwargs)

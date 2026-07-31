@@ -3,7 +3,6 @@ import re
 from datetime import datetime, timezone
 from typing import Dict, Optional, Tuple, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from app.models.contact_info import ContactInfo
 from app.models.conversation_history import ConversationHistory
 from app.models.conversation_state import ConversationState
@@ -108,16 +107,13 @@ class LeadCaptureAgent:
         the first time this conversation is seen. Populates the agent's
         instance attributes so process_message can pick up where it left off."""
         
-        # CRITICAL FIX: Use raw SQL text() to force SQLAlchemy to bypass UUID cast
-        result = self.db.execute(
-            text("SELECT * FROM conversation_state WHERE conversation_id = :conv_id"),
-            {"conv_id": conversation_id}
-        ).first()
-        
-        state = None
-        if result:
-            # Convert the raw row result back to the ORM object
-            state = self.db.query(ConversationState).get(result.id)
+        state = (
+            self.db.query(ConversationState)
+            .filter(
+                ConversationState.conversation_id == conversation_id
+            )
+            .first()
+        )
 
         if not state:
             state = ConversationState(conversation_id=conversation_id, mode="bot")

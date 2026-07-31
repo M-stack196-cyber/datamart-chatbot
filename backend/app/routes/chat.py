@@ -92,17 +92,10 @@ async def public_chat_messages(
     returns any new messages (including the staff member's replies) since
     `after_id`."""
     
-    # Convert the string ID to UUID for database query
-    try:
-        conversation_uuid = uuid.UUID(conversation_id)
-    except ValueError:
-        return {"messages": []}
-    
-    # Use ORM query with UUID object directly
     messages = (
         db.query(ConversationHistory)
         .filter(
-            ConversationHistory.conversation_id == conversation_uuid,
+            ConversationHistory.conversation_id == conversation_id,
             ConversationHistory.id > after_id,
         )
         .order_by(ConversationHistory.id.asc())
@@ -212,15 +205,9 @@ async def get_chat_history_from_new_tables(
 ):
     """Get full chat history so a returning visitor sees their past messages."""
     
-    try:
-        conversation_uuid = uuid.UUID(conversation_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid conversation ID format")
-
-    # Use ORM query with UUID object directly
     messages = (
         db.query(ConversationHistory)
-        .filter(ConversationHistory.conversation_id == conversation_uuid)
+        .filter(ConversationHistory.conversation_id == conversation_id)
         .order_by(ConversationHistory.id.asc())
         .all()
     )
@@ -272,23 +259,18 @@ async def end_conversation(
     from app.services.pdf_service import generate_handoff_pdf
     from app.services.email_service import send_chat_completion_emails
 
-    try:
-        conversation_uuid = uuid.UUID(conversation_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid conversation ID format")
-
-    summary = generate_handoff_summary(str(conversation_uuid), db)
-    pdf_content = generate_handoff_pdf(str(conversation_uuid), db)
+    summary = generate_handoff_summary(conversation_id, db)
+    pdf_content = generate_handoff_pdf(conversation_id, db)
 
     if not pdf_content:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    lead = db.query(ContactInfo).filter_by(conversation_id=conversation_uuid).first()
+    lead = db.query(ContactInfo).filter_by(conversation_id=conversation_id).first()
     visitor_email = ""
     if lead and lead.email and lead.email != "pending@example.com":
         visitor_email = lead.email
 
-    send_chat_completion_emails(str(conversation_uuid), pdf_content, summary or {}, visitor_email)
+    send_chat_completion_emails(conversation_id, pdf_content, summary or {}, visitor_email)
 
     return {
         "status": "ended",
