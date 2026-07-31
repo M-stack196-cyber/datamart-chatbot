@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from .contact_info import ContactInfo
     from .conversation_history import ConversationHistory
     from .project_conversation import ProjectConversation
+    from .conversation_thread import Conversation
     from .conversation import ChatConversation
 
 
@@ -56,11 +57,16 @@ class User(Base):
         cascade="all, delete-orphan"
     )
     
-    conversations: Mapped[List["ChatConversation"]] = relationship(
-        "ChatConversation", 
+    conversations: Mapped[List["Conversation"]] = relationship(
+        "Conversation",
         back_populates="user",
         cascade="all, delete-orphan",
-        lazy="dynamic"
+        lazy="dynamic",
+    )
+
+    chat_conversations: Mapped[List["ChatConversation"]] = relationship(
+        "ChatConversation",
+        back_populates="user",
     )
     
     contact_infos: Mapped[List["ContactInfo"]] = relationship(

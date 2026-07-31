@@ -3,10 +3,9 @@ import requests
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from typing import Optional
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import get_db
 from app.services.lead_agent import LeadCaptureAgent
 from app.dependencies import get_current_user
@@ -14,14 +13,18 @@ from app.models.user import User
 from app.models.conversation_state import ConversationState
 from app.models.conversation_history import ConversationHistory
 from app.models.contact_info import ContactInfo
-from app.models import STAFF_ROLES
-from app.models import ChatConversation, ChatMessage
+from app.models import Conversation, Message, STAFF_ROLES
 
 router = APIRouter()
 
 class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
+
+
+class AuthenticatedChatRequest(BaseModel):
+    message: str
+    conversation_id: int
 
 async def process_rag_query(message: str, db: Session) -> str:
     """Call the n8n chat-query workflow for general questions"""
@@ -116,65 +119,102 @@ async def public_chat_messages(
 
 @router.post("/chat")
 async def app_chat(
-    request: ChatRequest,
+    request: AuthenticatedChatRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    conversation_id = request.conversation_id or f"internal_{current_user.id}"
+    conversation = (
+        db.query(Conversation)
+        .filter(
+            Conversation.id == request.conversation_id,
+            Conversation.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not conversation:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found",
+        )
+
+    # Keep each authenticated sidebar conversation's agent state isolated.
+    agent_state_id = (
+        f"internal_{current_user.id}_{conversation.id}"
+    )
 
     agent = LeadCaptureAgent(db, user=current_user)
-    response, request_complete = agent.process_message(conversation_id, request.message)
+    response, request_complete = agent.process_message(
+        agent_state_id,
+        request.message,
+    )
 
     if response is None:
-        response = await process_rag_query(request.message, db)
-
-    # === STORE IN NEW CHAT TABLES TOO ===
-    # NOTE: this feeds the separate internal /api/conversations doc-chat
-    # feature for logged-in users. Left untouched on purpose - do not
-    # merge with the public chat-public flow's ConversationHistory writes.
-    conv = db.query(ChatConversation).filter(
-        ChatConversation.conversation_id == conversation_id
-    ).first()
-
-    if not conv:
-        conv = ChatConversation(
-            conversation_id=conversation_id,
-            status="active",
-            visitor_name=current_user.full_name,
-            visitor_email=current_user.email
+        response = await process_rag_query(
+            request.message,
+            db,
         )
-        db.add(conv)
-        db.commit()
-        db.refresh(conv)
 
-    user_msg = ChatMessage(
-        conversation_id=conv.id,
-        role="user",
-        message=request.message,
-        timestamp=datetime.utcnow()
+    existing_message_count = (
+        db.query(Message)
+        .filter(Message.conversation_id == conversation.id)
+        .count()
     )
-    db.add(user_msg)
+
+    if (
+        existing_message_count == 0
+        and (
+            not conversation.title
+            or conversation.title == "New conversation"
+        )
+    ):
+        compact_title = " ".join(
+            request.message.strip().split()
+        )
+        conversation.title = (
+            compact_title[:40]
+            if compact_title
+            else "New conversation"
+        )
+
+    db.add(
+        Message(
+            conversation_id=conversation.id,
+            role="user",
+            content=request.message,
+        )
+    )
 
     if response:
-        bot_msg = ChatMessage(
-            conversation_id=conv.id,
-            role="bot",
-            message=response,
-            timestamp=datetime.utcnow()
+        db.add(
+            Message(
+                conversation_id=conversation.id,
+                role="assistant",
+                content=response,
+            )
         )
-        db.add(bot_msg)
 
-    db.commit()
+    conversation.updated_at = datetime.now(timezone.utc)
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
     return {
         "response": response,
-        "conversation_id": conversation_id,
+        "conversation_id": conversation.id,
         "request_complete": request_complete,
         "user": {
             "name": current_user.full_name,
             "email": current_user.email,
-            "role": getattr(current_user, 'role', 'user')
-        }
+            "role": getattr(
+                current_user,
+                "role",
+                "user",
+            ),
+        },
     }
 
 

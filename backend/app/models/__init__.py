@@ -4,13 +4,11 @@ from .conversation_history import ConversationHistory
 from .conversation_state import ConversationState
 from .project_requests import ProjectRequest
 from .project_conversation import ProjectConversation
+from .conversation_thread import Conversation
 from .conversation import ChatConversation, ChatMessage, ChatSummary
 from .documents import Document
 from .message import Message
 from .feedback import Feedback
-
-# Aliases for backward compatibility
-Conversation = ChatConversation
 
 # Role constants - RESTORED hr and ceo
 USER_ROLES = ["admin", "pmo", "cto", "hr", "ceo", "customer"]

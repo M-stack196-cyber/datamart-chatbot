@@ -21,7 +21,7 @@ class ChatConversation(Base):
     ended_at = Column(DateTime(timezone=True), nullable=True)
     
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    user = relationship("User", back_populates="conversations", overlaps="messages")
+    user = relationship("User", back_populates="chat_conversations")
     
     chat_messages = relationship("ChatMessage", back_populates="conversation", cascade="all, delete-orphan")
     chat_summary = relationship("ChatSummary", back_populates="conversation", uselist=False, cascade="all, delete-orphan")

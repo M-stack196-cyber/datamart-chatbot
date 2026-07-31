@@ -127,7 +127,10 @@ export default function ChatPage() {
         conversationId = await createConversationRaw();
       }
 
-      const chatRaw = await api.chat(question);
+      const chatRaw = await api.chat(
+        question,
+        conversationId,
+      );
       const { answer, sources } = extractChatPayload(chatRaw);
 
       const assistantMessage = {
@@ -137,10 +140,6 @@ export default function ChatPage() {
         sources,
       };
       setMessages((prev) => [...prev, assistantMessage]);
-
-      // Integration contract: persist both user and assistant turns after each /chat response.
-      await api.saveMessage(conversationId, { role: "user", content: question });
-      await api.saveMessage(conversationId, { role: "assistant", content: answer });
 
       const refreshedConversations = await api.getConversations();
       setConversations(refreshedConversations);
