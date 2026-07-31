@@ -22,7 +22,7 @@ class ConversationState(Base):
     optional_attempted = Column(String, nullable=True)  # JSON string
     skipped_fields = Column(String, nullable=True)  # JSON string
     
-    mode = Column(String, default="bot")  # bot, pending_human, human
+    mode = Column(String, default="bot")  # bot, pending_human, human, closed
     assigned_agent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     handoff_requested_at = Column(DateTime(timezone=True), nullable=True)

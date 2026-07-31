@@ -114,42 +114,97 @@ def claim_handoff(
     current_user: User = Depends(require_role(*STAFF_ROLES)),
     db: Session = Depends(get_db),
 ):
-    """A staff member claims a pending live-chat request. Whoever claims it
-    first wins - the bot stops responding and the claiming employee talks
-    directly to the visitor from here on."""
-    state = db.query(ConversationState).filter_by(conversation_id=conversation_id).first()
+    """Atomically claim a conversation that is waiting for a human.
+
+    The row lock prevents two staff members from successfully claiming the
+    same conversation at nearly the same time.
+    """
+    state = (
+        db.query(ConversationState)
+        .filter_by(conversation_id=conversation_id)
+        .with_for_update()
+        .first()
+    )
+
     if not state:
+        db.rollback()
         raise HTTPException(404, "Conversation not found")
 
-    if state.mode == "human" and state.assigned_agent_id != current_user.id:
-        raise HTTPException(409, "This chat has already been claimed by another team member")
+    # A repeated click by the same employee is harmless.
+    if (
+        state.mode == "human"
+        and state.assigned_agent_id == current_user.id
+    ):
+        result = {
+            "conversation_id": conversation_id,
+            "mode": state.mode,
+            "assigned_to": current_user.display_name,
+            "already_claimed": True,
+        }
+        db.rollback()
+        return result
+
+    if state.mode == "human":
+        db.rollback()
+        raise HTTPException(
+            409,
+            "This chat has already been claimed by another team member",
+        )
+
+    if (
+        state.mode != "pending_human"
+        or state.assigned_agent_id is not None
+    ):
+        db.rollback()
+        raise HTTPException(
+            409,
+            "This conversation is not waiting for a team member",
+        )
 
     state.mode = "human"
     state.assigned_agent_id = current_user.id
     state.claimed_at = datetime.now(timezone.utc)
-    db.commit()
+    state.closed_at = None
 
-    # Let the visitor know a human has joined (only if not already sent)
-    # Use "system" role instead of "agent" so widget treats it differently
-    existing_join = db.query(ConversationHistory).filter(
-        ConversationHistory.conversation_id == conversation_id,
-        ConversationHistory.role.in_(["agent", "system"]),
-        ConversationHistory.message.contains("joined the chat")
-    ).first()
+    existing_join = (
+        db.query(ConversationHistory)
+        .filter(
+            ConversationHistory.conversation_id
+            == conversation_id,
+            ConversationHistory.role.in_(
+                ["agent", "system"]
+            ),
+            ConversationHistory.message.contains(
+                "joined the chat"
+            ),
+        )
+        .first()
+    )
 
     if not existing_join:
-        joined_msg = ConversationHistory(
-            conversation_id=conversation_id,
-            role="system",
-            message=f"{current_user.display_name} from Datamart has joined the chat. How can I help?",
+        db.add(
+            ConversationHistory(
+                conversation_id=conversation_id,
+                role="system",
+                message=(
+                    f"{current_user.display_name} from Datamart "
+                    "has joined the chat. How can I help?"
+                ),
+            )
         )
-        db.add(joined_msg)
-        db.commit()
-        print(f"✅ Join message sent for conversation {conversation_id}")
-    else:
-        print(f"⚠️ Join message already exists for conversation {conversation_id}")
 
-    return {"conversation_id": conversation_id, "mode": state.mode, "assigned_to": current_user.display_name}
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "conversation_id": conversation_id,
+        "mode": state.mode,
+        "assigned_to": current_user.display_name,
+        "already_claimed": False,
+    }
 
 
 @router.get("/handoff/{conversation_id}/messages")
@@ -158,23 +213,47 @@ def get_handoff_messages(
     current_user: User = Depends(require_role(*STAFF_ROLES)),
     db: Session = Depends(get_db),
 ):
-    """Full transcript for the staff member's chat panel."""
-    state = db.query(ConversationState).filter_by(conversation_id=conversation_id).first()
+    """Return the full transcript while enforcing claimed-chat ownership."""
+    state = (
+        db.query(ConversationState)
+        .filter_by(conversation_id=conversation_id)
+        .first()
+    )
+
     if not state:
         raise HTTPException(404, "Conversation not found")
 
+    if (
+        state.mode in {"human", "closed"}
+        and state.assigned_agent_id is not None
+        and state.assigned_agent_id != current_user.id
+    ):
+        raise HTTPException(
+            403,
+            "This conversation is assigned to another team member",
+        )
+
     messages = (
         db.query(ConversationHistory)
-        .filter(ConversationHistory.conversation_id == conversation_id)
+        .filter(
+            ConversationHistory.conversation_id
+            == conversation_id
+        )
         .order_by(ConversationHistory.id.asc())
         .all()
     )
+
     return {
         "mode": state.mode,
         "assigned_agent_id": state.assigned_agent_id,
         "messages": [
-            {"id": m.id, "role": m.role, "message": m.message, "created_at": m.created_at}
-            for m in messages
+            {
+                "id": message.id,
+                "role": message.role,
+                "message": message.message,
+                "created_at": message.created_at,
+            }
+            for message in messages
         ],
     }
 
@@ -190,38 +269,91 @@ def send_handoff_message(
     current_user: User = Depends(require_role(*STAFF_ROLES)),
     db: Session = Depends(get_db),
 ):
-    """Staff member sends a reply directly to the visitor. This is what the
-    visitor's widget picks up via GET /chat-public/{id}/messages polling."""
-    state = db.query(ConversationState).filter_by(conversation_id=conversation_id).first()
-    if not state:
-        raise HTTPException(404, "Conversation not found")
-    if state.mode != "human" or state.assigned_agent_id != current_user.id:
-        raise HTTPException(403, "You have not claimed this conversation")
+    """Save one employee reply for a conversation they have claimed."""
+    message_text = payload.message.strip()
 
-    # 🔥 FIX: Check for duplicate messages before saving (with time window)
-    # Check if the exact same message was sent by the same agent in the last 5 seconds
-    time_threshold = datetime.now(timezone.utc) - timedelta(seconds=5)
-    recent_msg = db.query(ConversationHistory).filter(
-        ConversationHistory.conversation_id == conversation_id,
-        ConversationHistory.role == "agent",
-        ConversationHistory.message == payload.message,
-        ConversationHistory.created_at >= time_threshold
-    ).first()
+    if not message_text:
+        raise HTTPException(
+            422,
+            "Message cannot be empty",
+        )
 
-    if recent_msg:
-        print(f"⚠️ Duplicate message detected (within 5s), not saving: {payload.message[:50]}")
-        return {"id": recent_msg.id, "role": recent_msg.role, "message": recent_msg.message, "created_at": recent_msg.created_at}
-
-    msg = ConversationHistory(
-        conversation_id=conversation_id,
-        role="agent",
-        message=payload.message,
+    # Lock the conversation while checking and saving the reply. This makes
+    # duplicate prevention reliable even when two requests arrive together.
+    state = (
+        db.query(ConversationState)
+        .filter_by(conversation_id=conversation_id)
+        .with_for_update()
+        .first()
     )
-    db.add(msg)
-    db.commit()
-    db.refresh(msg)
 
-    return {"id": msg.id, "role": msg.role, "message": msg.message, "created_at": msg.created_at}
+    if not state:
+        db.rollback()
+        raise HTTPException(404, "Conversation not found")
+
+    if (
+        state.mode != "human"
+        or state.assigned_agent_id != current_user.id
+    ):
+        db.rollback()
+        raise HTTPException(
+            403,
+            "You have not claimed this conversation",
+        )
+
+    time_threshold = (
+        datetime.now(timezone.utc)
+        - timedelta(seconds=5)
+    )
+
+    recent_message = (
+        db.query(ConversationHistory)
+        .filter(
+            ConversationHistory.conversation_id
+            == conversation_id,
+            ConversationHistory.role == "agent",
+            ConversationHistory.user_id
+            == current_user.id,
+            ConversationHistory.message == message_text,
+            ConversationHistory.created_at
+            >= time_threshold,
+        )
+        .first()
+    )
+
+    if recent_message:
+        result = {
+            "id": recent_message.id,
+            "role": recent_message.role,
+            "message": recent_message.message,
+            "created_at": recent_message.created_at,
+            "duplicate": True,
+        }
+        db.rollback()
+        return result
+
+    message = ConversationHistory(
+        conversation_id=conversation_id,
+        user_id=current_user.id,
+        role="agent",
+        message=message_text,
+    )
+    db.add(message)
+
+    try:
+        db.commit()
+        db.refresh(message)
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "id": message.id,
+        "role": message.role,
+        "message": message.message,
+        "created_at": message.created_at,
+        "duplicate": False,
+    }
 
 
 @router.post("/handoff/{conversation_id}/end")
@@ -230,60 +362,150 @@ def end_handoff(
     current_user: User = Depends(require_role(*STAFF_ROLES)),
     db: Session = Depends(get_db),
 ):
-    """End the live chat. Conversation goes back to bot mode in case the
-    visitor keeps chatting, but the bot won't re-trigger lead capture from
-    scratch since lead_started/collected_data are preserved."""
-    state = db.query(ConversationState).filter_by(conversation_id=conversation_id).first()
+    """End a claimed live chat exactly once."""
+    state = (
+        db.query(ConversationState)
+        .filter_by(conversation_id=conversation_id)
+        .with_for_update()
+        .first()
+    )
+
     if not state:
+        db.rollback()
         raise HTTPException(404, "Conversation not found")
+
     if state.assigned_agent_id != current_user.id:
-        raise HTTPException(403, "You are not assigned to this conversation")
+        db.rollback()
+        raise HTTPException(
+            403,
+            "You are not assigned to this conversation",
+        )
+
+    # A repeated End click must not create another system message or send
+    # another transcript email.
+    if state.mode == "closed":
+        result = {
+            "conversation_id": conversation_id,
+            "mode": "closed",
+            "already_closed": True,
+        }
+        db.rollback()
+        return result
+
+    if state.mode != "human":
+        db.rollback()
+        raise HTTPException(
+            409,
+            "Only an active human conversation can be ended",
+        )
 
     state.mode = "closed"
     state.closed_at = datetime.now(timezone.utc)
-    db.commit()
 
-    closing_msg = ConversationHistory(
-        conversation_id=conversation_id,
-        role="system",
-        message="This chat has ended. Thanks for reaching out - feel free to send another message anytime.",
+    closing_text = (
+        "This chat has ended. Thanks for reaching out - "
+        "feel free to send another message anytime."
     )
-    db.add(closing_msg)
-    db.commit()
 
-    # Build the transcript PDF, generate a summary, and email both the
-    # visitor and every admin address - same pipeline the old standalone
-    # chat-public flow used, just pointed at the real ConversationHistory/
-    # ContactInfo tables instead. Runs on a background thread so the
-    # employee's "End chat" click doesn't hang on SMTP (same pattern as
-    # services/handoff.py's notify_available_agents).
-    def _send_transcript_in_background(conv_id=conversation_id):
+    existing_closing_message = (
+        db.query(ConversationHistory)
+        .filter(
+            ConversationHistory.conversation_id
+            == conversation_id,
+            ConversationHistory.role == "system",
+            ConversationHistory.message == closing_text,
+        )
+        .first()
+    )
+
+    if not existing_closing_message:
+        db.add(
+            ConversationHistory(
+                conversation_id=conversation_id,
+                role="system",
+                message=closing_text,
+            )
+        )
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    def _send_transcript_in_background(
+        conv_id=conversation_id,
+    ):
         from app.database import SessionLocal
-        from app.services.summary_service import generate_handoff_summary
-        from app.services.pdf_service import generate_handoff_pdf
-        from app.services.email_service import send_chat_completion_emails
+        from app.services.summary_service import (
+            generate_handoff_summary,
+        )
+        from app.services.pdf_service import (
+            generate_handoff_pdf,
+        )
+        from app.services.email_service import (
+            send_chat_completion_emails,
+        )
 
-        bg_db = SessionLocal()
+        background_db = SessionLocal()
+
         try:
-            summary = generate_handoff_summary(conv_id, bg_db)
-            pdf_content = generate_handoff_pdf(conv_id, bg_db)
+            summary = generate_handoff_summary(
+                conv_id,
+                background_db,
+            )
+            pdf_content = generate_handoff_pdf(
+                conv_id,
+                background_db,
+            )
 
             if not pdf_content:
-                print(f"⚠️ No messages found - skipping transcript PDF for {conv_id}")
+                print(
+                    "⚠️ No messages found - skipping transcript "
+                    f"PDF for {conv_id}"
+                )
                 return
 
-            lead = bg_db.query(ContactInfo).filter_by(conversation_id=conv_id).first()
+            lead = (
+                background_db.query(ContactInfo)
+                .filter_by(conversation_id=conv_id)
+                .first()
+            )
+
             visitor_email = ""
-            if lead and lead.email and lead.email != "pending@example.com":
+
+            if (
+                lead
+                and lead.email
+                and lead.email != "pending@example.com"
+            ):
                 visitor_email = lead.email
 
-            send_chat_completion_emails(conv_id, pdf_content, summary or {}, visitor_email)
-            print(f"✅ Chat transcript emailed for conversation {conv_id}")
-        except Exception as e:
-            print(f"⚠️ Failed to send end-of-chat transcript for {conv_id}: {e}")
+            send_chat_completion_emails(
+                conv_id,
+                pdf_content,
+                summary or {},
+                visitor_email,
+            )
+            print(
+                "✅ Chat transcript emailed for conversation "
+                f"{conv_id}"
+            )
+        except Exception as error:
+            print(
+                "⚠️ Failed to send end-of-chat transcript for "
+                f"{conv_id}: {error}"
+            )
         finally:
-            bg_db.close()
+            background_db.close()
 
-    threading.Thread(target=_send_transcript_in_background, daemon=True).start()
+    threading.Thread(
+        target=_send_transcript_in_background,
+        daemon=True,
+    ).start()
 
-    return {"conversation_id": conversation_id, "mode": state.mode}
+    return {
+        "conversation_id": conversation_id,
+        "mode": state.mode,
+        "already_closed": False,
+    }
