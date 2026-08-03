@@ -574,8 +574,20 @@ What specific information would you like to know about?"""
 
         elif field == "name":
             words = message.split()
-            if len(words) >= 2 and all(len(w) >= 2 for w in words):
-                return " ".join(words[:3])
+
+            valid_words = all(
+                re.fullmatch(r"[A-Za-z][A-Za-z.'-]*", word)
+                for word in words
+            )
+
+            has_full_name_part = any(
+                len(re.sub(r"[^A-Za-z]", "", word)) >= 2
+                for word in words
+            )
+
+            if 2 <= len(words) <= 5 and valid_words and has_full_name_part:
+                return " ".join(words)
+
             return None
 
         elif field == "project_description":
