@@ -1,0 +1,9 @@
+.git
+.vercel
+**/.env
+**/.env.*
+**/node_modules
+venv
+backend/venv
+**/__pycache__
+**/*.pyc
