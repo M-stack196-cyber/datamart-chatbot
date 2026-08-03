@@ -34,6 +34,12 @@ class LeadCaptureAgent:
         self.lead_started = False  # Track if lead capture has started
         self._temp_messages = []  # Store messages temporarily for internal users
 
+        # Interruption-aware lead collection.
+        # These values are used by the public chat route when a visitor asks
+        # an unrelated question while the bot is waiting for a form field.
+        self.interruption_detected = False
+        self.interruption_resume_prompt = None
+
         # Handoff state (populated by _load_state, exposed to routes after process_message)
         self.mode = "bot"
         self.assigned_agent_id = None
@@ -54,10 +60,19 @@ class LeadCaptureAgent:
                 "error": "Please provide a valid email address (e.g., name@domain.com)."
             },
             "phone": {
-                "prompt": "What's the best phone number to reach you?",
-                "required": True,
-                "validation": lambda x: len(re.sub(r'[\s\-\(\)\+]', '', x)) >= 7,
-                "error": "Please provide a valid phone number (at least 7 digits)."
+                "prompt": "What's the best phone number to reach you? (Optional - you can say 'skip')",
+                "required": False,
+                "validation": lambda x: 7 <= len(re.sub(r'\D', '', x)) <= 15,
+                "skip_phrases": [
+                    "skip",
+                    "none",
+                    "not now",
+                    "no phone",
+                    "prefer email",
+                    "email only",
+                ],
+                "default": "",
+                "error": "Please provide a valid phone number, or say 'skip'."
             },
             "project_description": {
                 "prompt": "Could you describe your project in detail?",
@@ -128,9 +143,102 @@ class LeadCaptureAgent:
         self.completed_fields = set(json.loads(state.completed_fields or "[]"))
         self.optional_attempted = set(json.loads(state.optional_attempted or "[]"))
         self.skipped_fields = set(json.loads(state.skipped_fields or "[]"))
+
+        # Restore valid contact details from ContactInfo. This prevents the
+        # same visitor from being asked for name/email again in the same
+        # conversation.
+        if not self.is_internal:
+            contact = None
+
+            try:
+                contact = (
+                    self.db.query(ContactInfo)
+                    .filter_by(conversation_id=conversation_id)
+                    .first()
+                )
+            except KeyError:
+                # Some lightweight test sessions only provide a
+                # ConversationState query. Real SQLAlchemy sessions are
+                # unaffected.
+                contact = None
+
+            if contact:
+                saved_contact = {
+                    "name": (contact.name or "").strip(),
+                    "email": (contact.email or "").strip(),
+                    "phone": (contact.phone or "").strip(),
+                }
+
+                for field, value in saved_contact.items():
+                    if not value:
+                        continue
+
+                    if field == "name" and value.lower() == "pending":
+                        continue
+
+                    if (
+                        field == "email"
+                        and value.lower() == "pending@example.com"
+                    ):
+                        continue
+
+                    if self._validate_field(field, value):
+                        self.collected_data.setdefault(field, value)
+                        self.completed_fields.add(field)
+
         self.mode = state.mode or "bot"
         self.assigned_agent_id = state.assigned_agent_id
         return state
+
+    def _sync_contact_info(self) -> None:
+        """Copy collected public-widget fields into ContactInfo immediately."""
+        if self.is_internal or self._state_row is None:
+            return
+
+        contact = (
+            self.db.query(ContactInfo)
+            .filter_by(
+                conversation_id=self._state_row.conversation_id
+            )
+            .first()
+        )
+
+        if contact is None:
+            return
+
+        contact_fields = (
+            "name",
+            "email",
+            "phone",
+            "project_description",
+            "company",
+            "country",
+            "project_title",
+            "industry",
+            "budget",
+            "timeline",
+            "preferred_contact_method",
+        )
+
+        non_nullable_fields = {
+            "name",
+            "email",
+            "phone",
+            "project_description",
+        }
+
+        for field in contact_fields:
+            if field not in self.collected_data:
+                continue
+
+            value = self.collected_data.get(field)
+
+            if field in non_nullable_fields:
+                value = value or ""
+
+            setattr(contact, field, value)
+
+        contact.source = "public_widget"
 
     def _save_state(self) -> None:
         """Persist the agent's current progress back to the database."""
@@ -146,6 +254,7 @@ class LeadCaptureAgent:
         state.mode = self.mode
         state.assigned_agent_id = self.assigned_agent_id
         try:
+            self._sync_contact_info()
             self.db.commit()
         except Exception as e:
             self.db.rollback()
@@ -366,6 +475,87 @@ What specific information would you like to know about?"""
 
         return None
 
+    def _get_field_prompt(self, field: str) -> str:
+        """Return the configured prompt for a required or optional field."""
+        if field in self.REQUIRED_FIELDS:
+            return self.REQUIRED_FIELDS[field].get(
+                "prompt",
+                "Please provide that information.",
+            )
+
+        if field in self.OPTIONAL_FIELDS:
+            return self.OPTIONAL_FIELDS[field].get(
+                "prompt",
+                "Please provide that information.",
+            )
+
+        return "Please provide that information."
+
+    def is_interruption_question(
+        self,
+        field: str,
+        message: str,
+    ) -> bool:
+        """Detect a question that should be answered without consuming it
+        as the value of the field currently being collected.
+        """
+        text = message.strip()
+        lowered = text.lower()
+
+        if not text:
+            return False
+
+        # A valid email or phone should always be treated as form data.
+        if field in {"email", "phone"}:
+            extracted = self.extract_field_value(field, text)
+            if extracted and self._validate_field(field, extracted):
+                return False
+
+        # Explicit skip phrases belong to the current optional field.
+        if self.should_skip_field(field, text):
+            return False
+
+        question_starters = (
+            "what ",
+            "how ",
+            "why ",
+            "when ",
+            "where ",
+            "who ",
+            "which ",
+            "can you ",
+            "could you ",
+            "do you ",
+            "does datamart ",
+            "is there ",
+            "are there ",
+            "will you ",
+            "would you ",
+            "tell me ",
+            "explain ",
+            "can i ",
+            "may i ",
+        )
+
+        question_phrases = (
+            "do you also",
+            "can you also",
+            "how much",
+            "how long",
+            "what services",
+            "what technology",
+            "which technology",
+            "payment method",
+            "support after",
+            "maintenance after",
+        )
+
+        return (
+            "?" in text
+            or lowered.startswith(question_starters)
+            or any(phrase in lowered for phrase in question_phrases)
+        )
+
     def extract_field_value(self, field: str, message: str) -> Optional[str]:
         message = message.strip()
 
@@ -375,9 +565,11 @@ What specific information would you like to know about?"""
             return match.group(0) if match else None
 
         elif field == "phone":
-            cleaned = re.sub(r'[\s\-\(\)\+]', '', message)
-            if len(cleaned) >= 7:
+            digits = re.sub(r"\D", "", message)
+
+            if 7 <= len(digits) <= 15:
                 return message
+
             return None
 
         elif field == "name":
@@ -397,11 +589,44 @@ What specific information would you like to know about?"""
         return None
 
     def should_skip_field(self, field: str, message: str) -> bool:
-        if field not in self.OPTIONAL_FIELDS:
-            return False
-        skip_phrases = self.OPTIONAL_FIELDS[field].get("skip_phrases", [])
+        config = self.OPTIONAL_FIELDS.get(field)
+
+        if config is None:
+            required_config = self.REQUIRED_FIELDS.get(field, {})
+            if required_config.get("required", True):
+                return False
+            config = required_config
+
+        skip_phrases = config.get("skip_phrases", [])
         message_lower = message.lower().strip()
-        return any(phrase in message_lower for phrase in skip_phrases)
+
+        return any(
+            message_lower == phrase
+            or message_lower.startswith(f"{phrase} ")
+            for phrase in skip_phrases
+        )
+
+    def _missing_handoff_contact_field(self) -> Optional[str]:
+        """Return the first missing contact field required for handoff."""
+        for field in ("name", "email"):
+            value = str(self.collected_data.get(field) or "").strip()
+
+            if not value:
+                return field
+
+            if field == "name" and value.lower() == "pending":
+                return field
+
+            if (
+                field == "email"
+                and value.lower() == "pending@example.com"
+            ):
+                return field
+
+            if not self._validate_field(field, value):
+                return field
+
+        return None
 
     def get_next_question(self) -> Optional[Tuple[str, str]]:
         for field, config in self.REQUIRED_FIELDS.items():
@@ -439,8 +664,32 @@ What specific information would you like to know about?"""
         response = None
         lead_complete = False
 
-        # Check for a "talk to a human" request before anything else
+        # Check for a "talk to a human" request before anything else.
+        # Public visitors must provide a valid name and email first so the
+        # team can identify and follow up with them.
         if self.is_handoff_request(message):
+            if not self.is_internal:
+                missing_field = self._missing_handoff_contact_field()
+
+                if missing_field:
+                    self.collected_data["_handoff_requested"] = True
+                    self.lead_started = True
+                    self.awaiting_field = missing_field
+
+                    prompt = self._get_field_prompt(missing_field)
+                    response = (
+                        "Before I connect you with a team member, I need "
+                        f"your contact details. {prompt}"
+                    )
+
+                    self._save_message(
+                        conversation_id,
+                        "assistant",
+                        response,
+                    )
+                    self._save_state()
+                    return response, False
+
             response = self._start_handoff(conversation_id)
             self._save_message(conversation_id, "assistant", response)
             self._save_state()
@@ -455,10 +704,46 @@ What specific information would you like to know about?"""
 
         if self.awaiting_field:
             field = self.awaiting_field
-            is_optional = field in self.OPTIONAL_FIELDS
+            is_optional = (
+                field in self.OPTIONAL_FIELDS
+                or not self.REQUIRED_FIELDS.get(
+                    field,
+                    {},
+                ).get("required", True)
+            )
+
+            if self.is_interruption_question(field, message):
+                prompt = self._get_field_prompt(field)
+
+                self.interruption_detected = True
+                self.interruption_resume_prompt = prompt
+
+                direct_answer = self.get_service_response(message)
+
+                if direct_answer:
+                    response = (
+                        f"{direct_answer}\n\n"
+                        f"To continue your project request: {prompt}"
+                    )
+                    self._save_message(
+                        conversation_id,
+                        "assistant",
+                        response,
+                    )
+                    self._save_state()
+                    return response, False
+
+                # Returning None tells the route to use the existing RAG
+                # knowledge workflow. The same pending field is preserved.
+                self._save_state()
+                return None, False
 
             if is_optional and self.should_skip_field(field, message):
-                default = self.OPTIONAL_FIELDS[field].get("default", "Not specified")
+                field_config = (
+                    self.OPTIONAL_FIELDS.get(field)
+                    or self.REQUIRED_FIELDS.get(field, {})
+                )
+                default = field_config.get("default", "Not specified")
                 self.collected_data[field] = default
                 self.completed_fields.add(field)
                 self.skipped_fields.add(field)
@@ -476,10 +761,18 @@ What specific information would you like to know about?"""
 
                 if value and self._validate_field(field, value):
                     if is_optional:
-                        parser = self.OPTIONAL_FIELDS[field].get("parse")
+                        field_config = (
+                            self.OPTIONAL_FIELDS.get(field)
+                            or self.REQUIRED_FIELDS.get(field, {})
+                        )
+                        parser = field_config.get("parse")
+
                         if parser:
                             parsed = parser(value)
-                            self.collected_data[field] = parsed.get("value", value)
+                            self.collected_data[field] = parsed.get(
+                                "value",
+                                value,
+                            )
                         else:
                             self.collected_data[field] = value
                     else:
@@ -487,14 +780,48 @@ What specific information would you like to know about?"""
 
                     self.completed_fields.add(field)
 
-                    next_q = self.get_next_question()
-                    if next_q:
-                        field_name, prompt = next_q
-                        response = f"Great! {prompt}"
+                    if self.collected_data.get("_handoff_requested"):
+                        missing_field = (
+                            self._missing_handoff_contact_field()
+                        )
+
+                        if missing_field:
+                            self.awaiting_field = missing_field
+                            prompt = self._get_field_prompt(
+                                missing_field
+                            )
+                            response = f"Thanks! {prompt}"
+                        else:
+                            # Save the final contact value before notifying
+                            # employees, then continue the original handoff
+                            # request automatically.
+                            self.collected_data.pop(
+                                "_handoff_requested",
+                                None,
+                            )
+                            self.lead_started = False
+                            self.awaiting_field = None
+                            self._save_state()
+
+                            response = self._start_handoff(
+                                conversation_id
+                            )
+                            self._save_message(
+                                conversation_id,
+                                "assistant",
+                                response,
+                            )
+                            self._save_state()
+                            return response, False
                     else:
-                        response = self._generate_completion_message()
-                        lead_complete = True
-                        self._save_lead(conversation_id)
+                        next_q = self.get_next_question()
+                        if next_q:
+                            field_name, prompt = next_q
+                            response = f"Great! {prompt}"
+                        else:
+                            response = self._generate_completion_message()
+                            lead_complete = True
+                            self._save_lead(conversation_id)
                 else:
                     config = self.REQUIRED_FIELDS.get(field, {})
                     error_msg = config.get("error", "Please provide that information.")
@@ -505,8 +832,21 @@ What specific information would you like to know about?"""
             if intent == "project_inquiry" and not self.lead_started:
                 # Start lead capture only if not already started
                 self.lead_started = True
-                self.collected_data = {}
-                self.completed_fields = set()
+
+                # Keep verified contact details for this conversation while
+                # resetting project-specific answers.
+                preserved_contact = {}
+                preserved_completed = set()
+
+                for field in ("name", "email", "phone"):
+                    value = self.collected_data.get(field)
+
+                    if value and self._validate_field(field, value):
+                        preserved_contact[field] = value
+                        preserved_completed.add(field)
+
+                self.collected_data = preserved_contact
+                self.completed_fields = preserved_completed
                 self.optional_attempted = set()
                 self.skipped_fields = set()
                 self.awaiting_field = None
@@ -747,10 +1087,12 @@ Is there anything else I can help you with?"""
                     # Create a minimal contact record if it doesn't exist
                     lead = ContactInfo(
                         conversation_id=conversation_id,
-                        name="Pending",
-                        email="pending@example.com",
-                        phone="0000000000",
-                        project_description="Project details being collected..."
+                        name="",
+                        email="",
+                        phone="",
+                        project_description="",
+                        source="public_widget",
+                        status="new",
                     )
                     self.db.add(lead)
                     self.db.commit()
