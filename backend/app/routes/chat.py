@@ -58,9 +58,29 @@ async def public_chat(
     agent = LeadCaptureAgent(db, user=None)
     response, lead_complete = agent.process_message(conversation_id, request.message)
 
-    # If no response and still in bot mode, try RAG
+    # If no direct response and still in bot mode, use the existing
+    # knowledge workflow. During lead-capture interruptions, answer the
+    # visitor first and then resume the exact pending field.
     if response is None and agent.mode == "bot":
         response = await process_rag_query(request.message, db)
+
+        if (
+            agent.interruption_detected
+            and agent.interruption_resume_prompt
+        ):
+            response = (
+                f"{response}\n\n"
+                "To continue your project request: "
+                f"{agent.interruption_resume_prompt}"
+            )
+
+        # LeadCaptureAgent already stored the visitor's message. Store the
+        # RAG-generated assistant response exactly once as well.
+        agent._save_message(
+            conversation_id,
+            "assistant",
+            response,
+        )
 
     return {
         "response": response,
