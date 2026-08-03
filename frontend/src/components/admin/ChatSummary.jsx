@@ -13,7 +13,7 @@ const ChatSummary = ({ conversationId }) => {
             try {
                 setLoading(true);
                 // FIXED: Use import.meta.env for Vite, with fallback to localhost
-                const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                const baseUrl = import.meta.env.VITE_API_URL || '';
                 const response = await axios.get(
                     `${baseUrl}/api/chat-public/${conversationId}/summary`
                 );
@@ -32,7 +32,7 @@ const ChatSummary = ({ conversationId }) => {
 
     const downloadPDF = async () => {
         try {
-            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const baseUrl = import.meta.env.VITE_API_URL || '';
             const response = await axios.post(
                 `${baseUrl}/api/chat-public/${conversationId}/end`,
                 {},
