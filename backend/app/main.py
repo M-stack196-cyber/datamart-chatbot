@@ -23,6 +23,8 @@ app = FastAPI()
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+from app.runtime_schema import ensure_runtime_schema
+ensure_runtime_schema(engine)
 
 # ============================================================
 # CORS Configuration - Explicitly Allow Frontend Ports
