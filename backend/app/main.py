@@ -12,6 +12,7 @@ from app.dependencies import require_role
 from app.routes import auth_routes, admin_routes, conversation_routes
 from app.routes.chat import router as lead_chat_router
 from app.routes.google_calendar import router as google_calendar_router
+from app.routes.meeting_reminders import router as meeting_reminders_router
 from app.routes.admin.leads import router as admin_leads_router
 from app.routes.admin.handoff import router as admin_handoff_router
 from app.routes.admin.delete import router as admin_delete_router
@@ -52,6 +53,7 @@ app.include_router(admin_routes.router, prefix="/api")
 app.include_router(conversation_routes.router, prefix="/api")
 app.include_router(lead_chat_router, prefix="/api")
 app.include_router(google_calendar_router, prefix="/api")
+app.include_router(meeting_reminders_router, prefix="/api")
 app.include_router(admin_leads_router, prefix="/api")
 app.include_router(admin_handoff_router, prefix="/api")
 app.include_router(admin_delete_router, prefix="/api")
