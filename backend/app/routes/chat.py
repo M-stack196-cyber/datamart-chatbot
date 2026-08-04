@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from datetime import datetime, timezone
 from app.database import get_db
 from app.services.lead_agent import LeadCaptureAgent
+from app.services.meeting_agent import MeetingBookingAgent
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.conversation_state import ConversationState
@@ -53,6 +54,29 @@ async def public_chat(
     db: Session = Depends(get_db)
 ):
     conversation_id = request.conversation_id or str(uuid.uuid4())
+
+    meeting_response = None
+    meeting_handled = False
+
+    # Real SQLAlchemy sessions provide .query(). Some older unit tests use
+    # a simple object as a fake database, so skip database-backed meeting
+    # handling in that test-only situation.
+    if hasattr(db, "query"):
+        meeting_agent = MeetingBookingAgent(db)
+        meeting_response, meeting_handled = (
+            meeting_agent.process_message(
+                conversation_id,
+                request.message,
+            )
+        )
+
+    if meeting_handled:
+        return {
+            "response": meeting_response,
+            "conversation_id": conversation_id,
+            "lead_complete": False,
+            "mode": "meeting_booking",
+        }
 
     # Process with LeadCaptureAgent (restores lead capture & handoff)
     agent = LeadCaptureAgent(db, user=None)

@@ -9,6 +9,7 @@ from .conversation import ChatConversation, ChatMessage, ChatSummary
 from .documents import Document
 from .message import Message
 from .feedback import Feedback
+from .meeting_booking import MeetingBooking
 
 # Role constants - RESTORED hr and ceo
 USER_ROLES = ["admin", "pmo", "cto", "hr", "ceo", "customer"]
