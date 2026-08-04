@@ -91,7 +91,7 @@ async def extract_docx(file: UploadFile = File(...)):
 @app.get("/dtmindex.html", response_class=HTMLResponse)
 async def serve_chat_widget():
     # Look for the file in the frontend/public folder
-    file_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "dtmindex.html")
+    file_path = os.path.join(os.path.dirname(__file__), "dtmindex.html")
     
     try:
         with open(file_path, "r", encoding="utf-8") as f:

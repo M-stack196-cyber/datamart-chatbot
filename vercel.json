@@ -17,7 +17,7 @@
     },
     {
       "src": "/dtmindex\\.html",
-      "dest": "/frontend/dist/dtmindex.html"
+      "dest": "/backend/app/main.py"
     },
     {
       "src": "/about\\.html",
