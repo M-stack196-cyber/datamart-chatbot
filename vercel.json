@@ -1,29 +1,51 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
   "builds": [
     {
       "src": "backend/app/main.py",
       "use": "@vercel/python"
     },
     {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "src": "frontend/dist/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/app/main.py"
+      "dest": "/backend/app/main.py"
     },
     {
-      "handle": "filesystem"
+      "src": "/dtmindex\\.html",
+      "dest": "/frontend/dist/dtmindex.html"
+    },
+    {
+      "src": "/about\\.html",
+      "dest": "/frontend/dist/about.html"
+    },
+    {
+      "src": "/contact\\.html",
+      "dest": "/frontend/dist/contact.html"
+    },
+    {
+      "src": "/services\\.html",
+      "dest": "/frontend/dist/services.html"
+    },
+    {
+      "src": "/case-studies\\.html",
+      "dest": "/frontend/dist/case-studies.html"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/frontend/dist/assets/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/frontend/dist/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/frontend/dist/index.html"
     }
   ]
 }
